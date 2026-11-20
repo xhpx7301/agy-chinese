@@ -224,10 +224,10 @@ def main():
 
         utils_js_check = os.path.join(work_dir, "dist", "utils.js")
         need_utils_restore = False
-        if os.path.exists(utils_js_check):
+        if (os.path.exists(utils_js_check)):
             with open(utils_js_check, "r", encoding="utf-8", errors="ignore") as f:
                 u_tmp = f.read()
-            if "injectAntigravityI18n" in u_tmp and "syncI18nFromGithub" not in u_tmp:
+            if "injectAntigravityI18n" in u_tmp and ("syncI18nFromGithub" not in u_tmp or "remoteManifest.antigravity_version !== localVer" in u_tmp):
                 need_utils_restore = True
 
         if os.path.exists(backup_asar) and need_utils_restore:
@@ -300,10 +300,7 @@ def main():
                 "        const res = await fetch(rawBase + '/manifest.json', { signal: AbortSignal.timeout(4000) });\n"
                 "        if (!res.ok) return;\n"
                 "        const remoteManifest = await res.json();\n"
-                "        if (!remoteManifest || remoteManifest.antigravity_version !== localVer) {\n"
-                "            console.log('[Antigravity i18n] Version mismatch (local=' + localVer + ', remote=' + (remoteManifest && remoteManifest.antigravity_version) + '), keeping local localization.');\n"
-                "            return;\n"
-                "        }\n"
+                "        if (!remoteManifest || !remoteManifest.locale_version) return;\n"
                 "        const cacheDir = getI18nCacheDir();\n"
                 "        if (!cacheDir) return;\n"
                 "        let localLocaleVer = '';\n"
@@ -313,7 +310,7 @@ def main():
                 "        if (mPath) {\n"
                 "            try { localLocaleVer = JSON.parse(fs.readFileSync(mPath, 'utf-8')).locale_version || ''; } catch (_e) {}\n"
                 "        }\n"
-                "        if (remoteManifest.locale_version && remoteManifest.locale_version === localLocaleVer) return;\n"
+                "        if (remoteManifest.locale_version === localLocaleVer) return;\n"
                 "        const dataPathRel = (remoteManifest.files && remoteManifest.files.data) || 'scripts/i18n_data.json';\n"
                 "        const runnerPathRel = (remoteManifest.files && remoteManifest.files.runner) || 'scripts/i18n_runner.js';\n"
                 "        const [dRes, rRes] = await Promise.all([\n"
@@ -323,6 +320,7 @@ def main():
                 "        if (!dRes.ok || !rRes.ok) return;\n"
                 "        const [dText, rText] = await Promise.all([dRes.text(), rRes.text()]);\n"
                 "        JSON.parse(dText);\n"
+                "        new Function(rText);\n"
                 "        if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });\n"
                 "        fs.writeFileSync(path_1.default.join(cacheDir, 'i18n_data.json'), dText, 'utf-8');\n"
                 "        fs.writeFileSync(path_1.default.join(cacheDir, 'i18n_runner.js'), rText, 'utf-8');\n"
