@@ -5451,6 +5451,18 @@
     {
       "pattern": "^Are you sure you want to delete (?:the )?conversation\\s+(.+?)\\??$",
       "replacement": "确定要删除会话 $1？"
+    },
+    {
+      "pattern": "^RESOURCE_EXHAUSTED\\s*\\(code\\s*(\\d+)\\):\\s*Individual quota reached\\.\\s*Please upgrade your subscription to increase your limits\\.\\s*Resets in\\s*(.+?)\\.?$",
+      "replacement": "资源已耗尽 (错误码 $1)：已达到个人额度上限。请升级订阅以提高限额，将在 $2 后重置。"
+    },
+    {
+      "pattern": "^RESOURCE_EXHAUSTED\\s*\\(code\\s*(\\d+)\\):\\s*Individual quota reached\\.\\s*Please upgrade your subscription to increase your limits\\.?$",
+      "replacement": "资源已耗尽 (错误码 $1)：已达到个人额度上限。请升级订阅以提高限额。"
+    },
+    {
+      "pattern": "^RESOURCE_EXHAUSTED\\s*\\(code\\s*(\\d+)\\):\\s*(.+)$",
+      "replacement": "资源已耗尽 (错误码 $1)：$2"
     }
   ],
   "exemptions": []
