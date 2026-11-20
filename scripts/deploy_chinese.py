@@ -17,6 +17,7 @@ Features:
 - Strict node --check syntax gatekeeper (pre-pack & post-pack sandbox verification)
 """
 
+import argparse
 import os
 import sys
 import shutil
@@ -53,23 +54,87 @@ def read_asar_version(asar_dir):
     return ""
 
 
+def is_antigravity_running():
+    if sys.platform == "win32":
+        try:
+            res = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq Antigravity.exe", "/NH"],
+                capture_output=True,
+                text=True,
+            )
+            return "Antigravity.exe" in res.stdout
+        except Exception:
+            return False
+    return False
+
+
+def get_i18n_cache_dir():
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", "")
+        if appdata:
+            return os.path.join(appdata, "Antigravity", "i18n_cache")
+    elif sys.platform == "darwin":
+        return os.path.expanduser("~/Library/Application Support/Antigravity/i18n_cache")
+    else:
+        return os.path.expanduser("~/.config/Antigravity/i18n_cache")
+    return ""
+
+
+def is_asar_localized(target_asar):
+    try:
+        with open(target_asar, "rb") as f:
+            raw = f.read()
+        return b"injectAntigravityI18n" in raw and b"syncI18nFromGithub" in raw
+    except Exception:
+        return False
+
+
+def launch_antigravity(resources_dir):
+    if sys.platform == "win32":
+        exe_path = os.path.join(os.path.dirname(resources_dir), "Antigravity.exe")
+        if os.path.exists(exe_path):
+            flags = getattr(subprocess, "DETACHED_PROCESS", 0x00000008) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+            subprocess.Popen([exe_path], creationflags=flags, close_fds=True)
+            print(f"[✓] 已启动 Antigravity: {exe_path}")
+            return True
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", "-a", "Antigravity"])
+        print("[✓] 已启动 Antigravity。")
+        return True
+    print("[!] 未找到 Antigravity 可执行文件，请手动打开。")
+    return False
+
+
+def restore_original(resources_dir):
+    target_asar = os.path.join(resources_dir, "app.asar")
+    backup_asar = os.path.join(resources_dir, "app.asar.bak")
+    if not os.path.exists(backup_asar):
+        print("[错误] 未找到原版备份 app.asar.bak，无法自动还原。")
+        sys.exit(1)
+    if is_antigravity_running():
+        print("[!] 检测到 Antigravity.exe 仍在运行，还原后请务必彻底退出（含系统托盘）再重开。")
+    shutil.copy2(backup_asar, target_asar)
+    print("[✓] 已从 app.asar.bak 恢复官方原版 app.asar。")
+    cache_dir = get_i18n_cache_dir()
+    if cache_dir and os.path.exists(cache_dir):
+        shutil.rmtree(cache_dir, ignore_errors=True)
+        print(f"[✓] 已清理热同步缓存目录: {cache_dir}")
+    print("\n" + "=" * 64)
+    print("  已还原为官方英文原版！彻底退出 Antigravity（含托盘）后重开生效。")
+    print("=" * 64)
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Antigravity Chinese Locale Installer")
+    parser.add_argument("--restore", action="store_true", help="还原官方英文原版 app.asar 并清理缓存")
+    parser.add_argument("--check-and-launch", action="store_true", help="检查汉化状态，缺失时自动补全后启动 Antigravity")
+    args = parser.parse_args()
+
     print("=" * 64)
     print("  Antigravity 中文汉化部署工具 (xhpx7301/agy-chinese)")
     print("=" * 64)
 
-    # 1. Check Node.js
-    try:
-        res = subprocess.run(["node", "-v"], capture_output=True, text=True)
-        if res.returncode != 0:
-            print("[错误] 需要安装 Node.js (v18+)。")
-            sys.exit(1)
-        print(f"[✓] 已检测到 Node.js: {res.stdout.strip()}")
-    except Exception:
-        print("[错误] 未在环境变量 PATH 中找到 Node.js。")
-        sys.exit(1)
-
-    # 2. Locate Antigravity resources
+    # Locate Antigravity resources
     resources_dir = find_antigravity_resources()
     if not resources_dir:
         print("[!] 未在默认安装路径检测到 Antigravity。")
@@ -83,6 +148,32 @@ def main():
     print(f"[✓] 已定位 Antigravity 资源目录: {resources_dir}")
     target_asar = os.path.join(resources_dir, "app.asar")
     backup_asar = os.path.join(resources_dir, "app.asar.bak")
+
+    if args.restore:
+        restore_original(resources_dir)
+        return
+
+    if args.check_and_launch and is_asar_localized(target_asar):
+        print("[✓] 检测到汉化补丁完整（含自动热同步），正在启动 Antigravity...")
+        launch_antigravity(resources_dir)
+        return
+
+    if args.check_and_launch:
+        print("[!] 检测到汉化尚未注入或已被官方更新覆盖，正在自动重新部署汉化...")
+
+    if is_antigravity_running():
+        print("[!] 提示：检测到 Antigravity.exe 正在运行，部署完成后请彻底退出（含系统托盘）再重开。")
+
+    # 1. Check Node.js
+    try:
+        res = subprocess.run(["node", "-v"], capture_output=True, text=True)
+        if res.returncode != 0:
+            print("[错误] 需要安装 Node.js (v18+)。")
+            sys.exit(1)
+        print(f"[✓] 已检测到 Node.js: {res.stdout.strip()}")
+    except Exception:
+        print("[错误] 未在环境变量 PATH 中找到 Node.js。")
+        sys.exit(1)
 
     # 3. Backup original app.asar if not backed up yet
     if not os.path.exists(backup_asar):
@@ -452,9 +543,12 @@ def main():
 
         shutil.copy2(temp_pack, target_asar)
         print("[✓] 生产环境 app.asar 替换成功！")
-        print("\n" + "=" * 64)
-        print("  汉化部署成功！请彻底退出 Antigravity（含系统托盘）后重新打开。")
-        print("=" * 64)
+        if args.check_and_launch:
+            launch_antigravity(resources_dir)
+        else:
+            print("\n" + "=" * 64)
+            print("  汉化部署成功！请彻底退出 Antigravity（含系统托盘）后重新打开。")
+            print("=" * 64)
 
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)

@@ -16,13 +16,15 @@ Google Antigravity 桌面端深度汉化包与自动同步工程方案（基于 
 
 ## 使用方法
 
-### 方式一：一键安装（Windows）
+### 方式一：一键安装与日常启动（Windows）
 1. 确保已安装 **Node.js (v18+)** 和 **Python (3.8+)**。
 2. 双击运行根目录下的 `一键汉化.bat`，或执行：
    ```bash
    python scripts/deploy_chinese.py
    ```
 3. **彻底退出 Antigravity**（右键任务栏右下角系统托盘图标选择退出），再重新打开即可生效。
+4. **日常防失效启动**：可直接双击 `启动Antigravity(自动检查汉化).bat` 启动客户端；若官方自动更新覆盖了汉化，会自动先补打汉化再拉起客户端。
+5. **还原官方英文**：如需恢复官方原版，双击 `一键还原官方英文.bat`（或执行 `python scripts/deploy_chinese.py --restore`）。
 
 ### 方式二：作为 Antigravity Skill 使用
 将 `skills/Chinesizing` 复制到全局技能目录：
