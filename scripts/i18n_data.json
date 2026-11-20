@@ -1333,7 +1333,31 @@
     "Record Audio": "录制语音",
     "Record audio": "录制语音",
     "Stop Recording": "停止录制",
-    "Stop Audio Recording": "停止语音录制"
+    "Stop Audio Recording": "停止语音录制",
+    "Are you sure you want to delete": "确定要删除",
+    "Are you sure you want to": "确定要",
+    "the project": "项目",
+    "the conversation": "会话",
+    "the workspace": "工作区",
+    "the folder": "文件夹",
+    "the file": "文件",
+    "This action cannot be undone.": "此操作无法撤销。",
+    "This cannot be undone.": "此操作无法撤销。",
+    "Cannot be undone.": "无法撤销。",
+    "Canceled": "已取消",
+    "No conversations": "暂无会话",
+    "Filter projects...": "筛选项目...",
+    "Filter conversations...": "筛选会话...",
+    "Switch Branch": "切换分支",
+    "Create Branch": "创建分支",
+    "Discard Changes": "放弃更改",
+    "View Diff": "查看差异",
+    "No changes": "无更改",
+    "Attach file": "附加文件",
+    "Attach files": "附加文件",
+    "Stop generating": "停止生成",
+    "Voice input": "语音输入",
+    "Dictate": "语音听写"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -1557,6 +1581,14 @@
     {
       "pattern": "^This undo action will revert (\\d+) files?\\.?$",
       "replacement": "此撤销操作将还原 $1 个文件。"
+    },
+    {
+      "pattern": "^Are you sure you want to delete (?:the )?project\\s+(.+?)\\??$",
+      "replacement": "确定要删除项目 $1？"
+    },
+    {
+      "pattern": "^Are you sure you want to delete (?:the )?conversation\\s+(.+?)\\??$",
+      "replacement": "确定要删除会话 $1？"
     }
   ],
   "exemptions": []
