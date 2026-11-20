@@ -1,0 +1,9 @@
+{
+  "antigravity_version": "44.9.1",
+  "locale_version": "2026.11.20.2",
+  "repo": "xhpx7301/agy-chinese",
+  "files": {
+    "data": "scripts/i18n_data.json",
+    "runner": "scripts/i18n_runner.js"
+  }
+}
