@@ -93,8 +93,7 @@ def launch_antigravity(resources_dir):
     if sys.platform == "win32":
         exe_path = os.path.join(os.path.dirname(resources_dir), "Antigravity.exe")
         if os.path.exists(exe_path):
-            flags = getattr(subprocess, "DETACHED_PROCESS", 0x00000008) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
-            subprocess.Popen([exe_path], creationflags=flags, close_fds=True)
+            os.startfile(exe_path)
             print(f"[✓] 已启动 Antigravity: {exe_path}")
             return True
     elif sys.platform == "darwin":
