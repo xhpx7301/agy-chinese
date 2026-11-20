@@ -1357,7 +1357,11 @@
     "Attach files": "附加文件",
     "Stop generating": "停止生成",
     "Voice input": "语音输入",
-    "Dictate": "语音听写"
+    "Dictate": "语音听写",
+    "delete the project": "删除项目",
+    "delete this project": "删除此项目",
+    "delete the conversation": "删除会话",
+    "delete this conversation": "删除此会话"
   },
   "reverse_map": {
     "始终询问": "Always Ask",

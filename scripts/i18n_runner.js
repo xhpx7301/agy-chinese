@@ -102,12 +102,13 @@
         if (!trimmed) return null;
         if (isExempt(original)) return null;
 
+        var norm = trimmed.replace(/\s+/g, " ");
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
         var regexList = window.__ANTIGRAVITY_REGEX_RULES__ || REGEX_RULES;
 
-        // Exact match
-        if (exactMap[trimmed]) {
-            var target = exactMap[trimmed];
+        // Exact match (also try whitespace-normalized key)
+        var target = exactMap[trimmed] || exactMap[norm];
+        if (target) {
             var leading = original.match(/^\s*/)[0];
             var trailing = original.match(/\s*$/)[0];
             return leading + target + trailing;
@@ -115,8 +116,9 @@
 
         // Regex dynamic rules
         for (var i = 0; i < regexList.length; i++) {
-            if (regexList[i].re.test(trimmed)) {
-                var replaced = trimmed.replace(regexList[i].re, regexList[i].rep);
+            var testStr = regexList[i].re.test(trimmed) ? trimmed : (regexList[i].re.test(norm) ? norm : null);
+            if (testStr !== null) {
+                var replaced = testStr.replace(regexList[i].re, regexList[i].rep);
                 replaced = replaced
                     .replace(/(\d+)\s*days?/gi, "$1 天")
                     .replace(/(\d+)\s*hours?/gi, "$1 小时")
