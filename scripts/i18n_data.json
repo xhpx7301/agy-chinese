@@ -1326,7 +1326,14 @@
     "Are you sure you want to delete this conversation": "确定要删除此会话",
     "This will permanently delete": "这将永久删除其中的",
     "within it.": "。",
-    "inside it.": "。"
+    "inside it.": "。",
+    "Work in a New Worktree": "在新的工作树 (Worktree) 中工作",
+    "Work in a new worktree": "在新的工作树 (Worktree) 中工作",
+    "Keeps your checkout untouched": "保持当前本地检出不变",
+    "Record Audio": "录制语音",
+    "Record audio": "录制语音",
+    "Stop Recording": "停止录制",
+    "Stop Audio Recording": "停止语音录制"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -1371,7 +1378,8 @@
     "知识工作": "Knowledge Work",
     "软件工程": "Software Engineering",
     "极高": "Extra",
-    "本地检出": "Local Checkout"
+    "本地检出": "Local Checkout",
+    "在新的工作树 (Worktree) 中工作": "Work in a New Worktree"
   },
   "regex_rules": [
     {
