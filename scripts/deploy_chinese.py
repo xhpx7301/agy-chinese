@@ -120,14 +120,23 @@ def main():
         subprocess.run(f'npx --yes @electron/asar extract "{target_asar}" "{work_dir}"', shell=True, check=True)
         target_ver = read_asar_version(work_dir)
 
-        if os.path.exists(backup_asar):
-            subprocess.run(f'npx --yes @electron/asar extract "{backup_asar}" "{bak_dir}"', shell=True, check=True)
+        utils_js_check = os.path.join(work_dir, "dist", "utils.js")
+        need_utils_restore = False
+        if os.path.exists(utils_js_check):
+            with open(utils_js_check, "r", encoding="utf-8", errors="ignore") as f:
+                u_tmp = f.read()
+            if "injectAntigravityI18n" in u_tmp and "syncI18nFromGithub" not in u_tmp:
+                need_utils_restore = True
+
+        if os.path.exists(backup_asar) and need_utils_restore:
+            subprocess.run(f'npx --yes @electron/asar extract-file "{backup_asar}" package.json', shell=True, cwd=bak_dir, check=True)
             bak_ver = read_asar_version(bak_dir)
             if target_ver and bak_ver and target_ver == bak_ver:
-                print("[*] 检测到同版本原版备份，将基于干净原版重新注入最新补丁...")
-                shutil.rmtree(work_dir, ignore_errors=True)
-                work_dir = bak_dir
-                bak_dir = None
+                print("[*] 检测到旧版汉化补丁，正在从原版备份恢复 utils.js 以升级热同步模块...")
+                subprocess.run(f'npx --yes @electron/asar extract-file "{backup_asar}" dist/utils.js', shell=True, cwd=bak_dir, check=True)
+                restored_utils = os.path.join(bak_dir, "utils.js")
+                if os.path.exists(restored_utils):
+                    shutil.copy2(restored_utils, utils_js_check)
             elif target_ver and bak_ver and target_ver != bak_ver:
                 print(f"[*] 检测到客户端已升级 ({bak_ver} -> {target_ver})，正在更新原版备份 app.asar.bak ...")
                 shutil.copy2(target_asar, backup_asar)
