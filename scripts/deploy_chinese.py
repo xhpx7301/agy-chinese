@@ -42,44 +42,55 @@ def find_antigravity_resources():
     return None
 
 
+def read_asar_version(asar_dir):
+    pkg_path = os.path.join(asar_dir, "package.json")
+    if os.path.exists(pkg_path):
+        try:
+            with open(pkg_path, "r", encoding="utf-8") as f:
+                return json.load(f).get("version", "")
+        except Exception:
+            pass
+    return ""
+
+
 def main():
     print("=" * 64)
-    print("  Antigravity Chinese Locale Installer (xhpx7301/agy-chinese)")
+    print("  Antigravity 中文汉化部署工具 (xhpx7301/agy-chinese)")
     print("=" * 64)
 
     # 1. Check Node.js
     try:
         res = subprocess.run(["node", "-v"], capture_output=True, text=True)
         if res.returncode != 0:
-            print("[Error] Node.js (v18+) is required.")
+            print("[错误] 需要安装 Node.js (v18+)。")
             sys.exit(1)
-        print(f"[✓] Node.js detected: {res.stdout.strip()}")
+        print(f"[✓] 已检测到 Node.js: {res.stdout.strip()}")
     except Exception:
-        print("[Error] Node.js executable not found in PATH.")
+        print("[错误] 未在环境变量 PATH 中找到 Node.js。")
         sys.exit(1)
 
     # 2. Locate Antigravity resources
     resources_dir = find_antigravity_resources()
     if not resources_dir:
-        print("[!] Antigravity installation not detected in standard path.")
-        user_in = input("Please input the 'resources' folder path of Antigravity: ").strip()
+        print("[!] 未在默认安装路径检测到 Antigravity。")
+        user_in = input("请输入 Antigravity 的 resources 目录路径: ").strip()
         if os.path.exists(user_in) and os.path.exists(os.path.join(user_in, "app.asar")):
             resources_dir = user_in
         else:
-            print("[Error] Invalid path or app.asar not found.")
+            print("[错误] 路径无效或未找到 app.asar。")
             sys.exit(1)
 
-    print(f"[✓] Antigravity resources found: {resources_dir}")
+    print(f"[✓] 已定位 Antigravity 资源目录: {resources_dir}")
     target_asar = os.path.join(resources_dir, "app.asar")
     backup_asar = os.path.join(resources_dir, "app.asar.bak")
 
     # 3. Backup original app.asar if not backed up yet
     if not os.path.exists(backup_asar):
-        print("[*] Creating initial backup: app.asar.bak ...")
+        print("[*] 正在创建初始原版备份: app.asar.bak ...")
         shutil.copy2(target_asar, backup_asar)
-        print("[✓] Backup completed.")
+        print("[✓] 原版备份完成。")
     else:
-        print("[✓] Existing backup detected (app.asar.bak).")
+        print("[✓] 已检测到原版备份 (app.asar.bak)。")
 
     # 4. Validate source files
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -90,22 +101,36 @@ def main():
 
     for req_file in (i18n_runner_src, i18n_data_src):
         if not os.path.exists(req_file):
-            print(f"[Error] Missing required file: {req_file}")
+            print(f"[错误] 缺少必需文件: {req_file}")
             sys.exit(1)
 
     with open(i18n_data_src, "r", encoding="utf-8") as f:
         json.load(f)
     chk_runner = subprocess.run(["node", "--check", i18n_runner_src], capture_output=True, text=True)
     if chk_runner.returncode != 0:
-        print(f"[Error] Syntax error in i18n_runner.js:\n{chk_runner.stderr}")
+        print(f"[错误] i18n_runner.js 语法校验失败:\n{chk_runner.stderr}")
         sys.exit(1)
 
     work_dir = tempfile.mkdtemp(prefix="agy_chinese_work_")
+    bak_dir = tempfile.mkdtemp(prefix="agy_chinese_bak_")
     verify_dir = tempfile.mkdtemp(prefix="agy_chinese_verify_")
 
     try:
-        print("[*] Extracting app.asar into temporary sandbox...")
+        print("[*] 正在解包 app.asar 到临时沙箱...")
         subprocess.run(f'npx --yes @electron/asar extract "{target_asar}" "{work_dir}"', shell=True, check=True)
+        target_ver = read_asar_version(work_dir)
+
+        if os.path.exists(backup_asar):
+            subprocess.run(f'npx --yes @electron/asar extract "{backup_asar}" "{bak_dir}"', shell=True, check=True)
+            bak_ver = read_asar_version(bak_dir)
+            if target_ver and bak_ver and target_ver == bak_ver:
+                print("[*] 检测到同版本原版备份，将基于干净原版重新注入最新补丁...")
+                shutil.rmtree(work_dir, ignore_errors=True)
+                work_dir = bak_dir
+                bak_dir = None
+            elif target_ver and bak_ver and target_ver != bak_ver:
+                print(f"[*] 检测到客户端已升级 ({bak_ver} -> {target_ver})，正在更新原版备份 app.asar.bak ...")
+                shutil.copy2(target_asar, backup_asar)
 
         dist_dir = os.path.join(work_dir, "dist")
         os.makedirs(dist_dir, exist_ok=True)
@@ -217,7 +242,7 @@ def main():
                 )
             with open(utils_js, "w", encoding="utf-8") as f:
                 f.write(u_content)
-            print("[✓] Patched utils.js (hot-cache + GitHub sync)")
+            print("[✓] 已修补 utils.js（本地热缓存 + GitHub 自动同步）")
 
         # B. Patch main.js (global web-contents-created hook, tray labels, quit dialog, GitHub sync trigger)
         main_js = os.path.join(dist_dir, "main.js")
@@ -260,7 +285,7 @@ def main():
 
         with open(main_js, "w", encoding="utf-8") as f:
             f.write(m_content)
-        print("[✓] Patched main.js")
+        print("[✓] 已修补 main.js（全局窗口注入 + 托盘/退出弹窗汉化）")
 
         # C. Patch tray.js
         tray_js = os.path.join(dist_dir, "tray.js")
@@ -278,7 +303,7 @@ def main():
                 tray_content = tray_content.replace(old_count_expr, new_count_expr, 1)
                 with open(tray_js, "w", encoding="utf-8") as f:
                     f.write(tray_content)
-                print("[✓] Patched tray.js")
+                print("[✓] 已修补 tray.js（系统托盘动态智能体计数）")
 
         # D. Patch menu.js
         menu_js = os.path.join(dist_dir, "menu.js")
@@ -298,7 +323,7 @@ def main():
             menu_content = menu_content.replace(old, new)
         with open(menu_js, "w", encoding="utf-8") as f:
             f.write(menu_content)
-        print("[✓] Patched menu.js")
+        print("[✓] 已修补 menu.js（原生应用菜单）")
 
         # E. Patch updater.js
         updater_js = os.path.join(dist_dir, "updater.js")
@@ -315,7 +340,7 @@ def main():
             upd_content = upd_content.replace(old, new)
         with open(updater_js, "w", encoding="utf-8") as f:
             f.write(upd_content)
-        print("[✓] Patched updater.js")
+        print("[✓] 已修补 updater.js（检查更新菜单与弹窗）")
 
         # F. Patch ipcHandlers.js (native context menus with hot-cache support)
         ipc_js = os.path.join(dist_dir, "ipcHandlers.js")
@@ -362,7 +387,7 @@ def main():
                     ipc_content = ipc_content.replace("label: item.label ?? '',", "label: translateContextMenuLabel(item.label ?? ''),")
                     with open(ipc_js, "w", encoding="utf-8") as f:
                         f.write(ipc_content)
-                    print("[✓] Patched ipcHandlers.js")
+                    print("[✓] 已修补 ipcHandlers.js（原生右键菜单汉化）")
 
         # 5. Pre-pack syntax gatekeeper
         check_targets = [
@@ -378,9 +403,9 @@ def main():
             if os.path.exists(fpath):
                 chk = subprocess.run(["node", "--check", fpath], capture_output=True, text=True)
                 if chk.returncode != 0:
-                    print(f"[Error] Pre-pack syntax check failed on {fpath}:\n{chk.stderr}")
+                    print(f"[错误] 打包前语法校验失败 {fpath}:\n{chk.stderr}")
                     sys.exit(1)
-        print("[✓] Pre-pack syntax checks passed 100%.")
+        print("[✓] 打包前语法门禁校验 100% 通过。")
 
         # 6. Pack into temp asar
         temp_pack = os.path.join(tempfile.gettempdir(), "agy_chinese_new.asar")
@@ -390,7 +415,7 @@ def main():
         if os.path.exists(temp_unpacked):
             shutil.rmtree(temp_unpacked)
 
-        print("[*] Packaging modified files into asar...")
+        print("[*] 正在重新打包 app.asar ...")
         subprocess.run(
             f'npx --yes @electron/asar pack "{work_dir}" "{temp_pack}" --unpack-dir "node_modules/chrome-devtools-mcp"',
             shell=True,
@@ -398,16 +423,16 @@ def main():
         )
 
         # 7. Post-pack sandbox verification
-        print("[*] Verifying packed asar in sandbox...")
+        print("[*] 正在沙箱中解包验证打包产物...")
         subprocess.run(f'npx --yes @electron/asar extract "{temp_pack}" "{verify_dir}"', shell=True, check=True)
         for rel in ["utils.js", "main.js", "tray.js", "menu.js", "updater.js", "ipcHandlers.js", "i18n_runner.js"]:
             vpath = os.path.join(verify_dir, "dist", rel)
             if os.path.exists(vpath):
                 chk = subprocess.run(["node", "--check", vpath], capture_output=True, text=True)
                 if chk.returncode != 0:
-                    print(f"[Error] Post-pack syntax check failed on {vpath}:\n{chk.stderr}")
+                    print(f"[错误] 打包后沙箱校验失败 {vpath}:\n{chk.stderr}")
                     sys.exit(1)
-        print("[✓] Post-pack sandbox verification passed 100%.")
+        print("[✓] 打包后沙箱校验 100% 通过。")
 
         # 8. Atomic replacement
         target_unpacked = target_asar + ".unpacked"
@@ -417,13 +442,15 @@ def main():
             shutil.copytree(temp_unpacked, target_unpacked)
 
         shutil.copy2(temp_pack, target_asar)
-        print("[✓] Production app.asar updated successfully!")
+        print("[✓] 生产环境 app.asar 替换成功！")
         print("\n" + "=" * 64)
         print("  汉化部署成功！请彻底退出 Antigravity（含系统托盘）后重新打开。")
         print("=" * 64)
 
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
+        if bak_dir:
+            shutil.rmtree(bak_dir, ignore_errors=True)
         shutil.rmtree(verify_dir, ignore_errors=True)
 
 
