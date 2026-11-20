@@ -1308,7 +1308,18 @@
     "Open Folder in New Window": "在新窗口中打开文件夹",
     "No projects": "暂无项目",
     "No projects found": "未找到项目",
-    "No matching projects": "未找到匹配的项目"
+    "No matching projects": "未找到匹配的项目",
+    "Local Checkout": "本地检出",
+    "Start Voice mode": "开启语音模式",
+    "Stop Voice mode": "停止语音模式",
+    "Start voice mode": "开启语音模式",
+    "Stop voice mode": "停止语音模式",
+    "Undo to this point": "撤销到此处",
+    "just now": "刚刚",
+    "Just now": "刚刚",
+    "a few seconds ago": "几秒前",
+    "This undo action will not make any code changes.": "此撤销操作不会修改任何代码。",
+    "Where should we pick up?": "我们从哪里开始？"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -1352,7 +1363,8 @@
     "外部浏览器": "External Browser",
     "知识工作": "Knowledge Work",
     "软件工程": "Software Engineering",
-    "极高": "Extra"
+    "极高": "Extra",
+    "本地检出": "Local Checkout"
   },
   "regex_rules": [
     {
@@ -1498,6 +1510,38 @@
     {
       "pattern": "^(.+?) is currently available to (.+?) plan subscribers\\.$",
       "replacement": "$1 目前仅向 $2 套餐订阅用户开放。"
+    },
+    {
+      "pattern": "^Welcome back,\\s*(.+?)\\.\\s*Where should we pick up\\?$",
+      "replacement": "欢迎回来，$1。我们从哪里开始？"
+    },
+    {
+      "pattern": "^Welcome,\\s*(.+?)\\.\\s*Where should we pick up\\?$",
+      "replacement": "欢迎，$1。我们从哪里开始？"
+    },
+    {
+      "pattern": "^(\\d+)s ago$",
+      "replacement": "$1 秒前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+seconds?\\s+ago$",
+      "replacement": "$1 秒前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+minutes?\\s+ago$",
+      "replacement": "$1 分钟前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+hours?\\s+ago$",
+      "replacement": "$1 小时前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+days?\\s+ago$",
+      "replacement": "$1 天前"
+    },
+    {
+      "pattern": "^This undo action will revert (\\d+) files?\\.?$",
+      "replacement": "此撤销操作将还原 $1 个文件。"
     }
   ],
   "exemptions": []
