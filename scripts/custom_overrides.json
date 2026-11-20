@@ -30,7 +30,6 @@
     "Release Notes": "更新日志",
     "Queue until after the current turn.": "排队等待当前轮次完成后发送。",
     "Interrupt the agent and send immediately.": "立即打断智能体并发送。",
-    "Turbo Mode": "极速模式 (Turbo)",
     "Narrow": "较窄",
     "Wide": "较宽",
     "Default Light": "默认浅色",
@@ -39,8 +38,6 @@
     "Mcp Tools": "MCP 工具",
     "Plugin: ": "插件: ",
     "CONVERSATION": "会话交互",
-    "Always Ask": "始终询问",
-    "Always Proceed": "自动继续",
     "Inherit Global": "继承全局",
     "Allow": "允许",
     "Deny": "拒绝",
@@ -189,7 +186,6 @@
     "Stop Voice mode": "停止语音模式",
     "Start voice mode": "开启语音模式",
     "Stop voice mode": "停止语音模式",
-    "Undo to this point": "撤销到此处",
     "Just now": "刚刚",
     "a few seconds ago": "几秒前",
     "Where should we pick up?": "我们从哪里开始？",
@@ -232,8 +228,6 @@
     "New": "新"
   },
   "reverse_map": {
-    "始终询问": "Always Ask",
-    "自动继续": "Always Proceed",
     "继承全局": "Inherit Global",
     "允许": "Allow",
     "拒绝": "Deny",
@@ -245,7 +239,6 @@
     "跟随系统": "System",
     "继承系统": "Inherit",
     "无正在运行的智能体": "No agents running",
-    "极速模式 (Turbo)": "Turbo Mode",
     "默认浅色": "Default Light",
     "默认深色": "Default Dark",
     "较窄": "Narrow",
@@ -275,7 +268,10 @@
     "软件工程": "Software Engineering",
     "极高": "Extra",
     "本地检出": "Local Checkout",
-    "在新的工作树 (Worktree) 中工作": "Work in a New Worktree"
+    "在新的工作树 (Worktree) 中工作": "Work in a New Worktree",
+    "总是询问": "Always Ask",
+    "始终继续": "Always Proceed",
+    "极速模式 (Turbo Mode)": "Turbo Mode"
   },
   "regex_rules": [
     {

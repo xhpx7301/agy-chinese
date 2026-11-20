@@ -812,7 +812,7 @@
     "Tokens": "Token 消耗",
     "Token Usage": "Token 使用量",
     "Strict Mode": "严格模式",
-    "Always Ask": "始终询问",
+    "Always Ask": "总是询问",
     "Always Allow": "总是允许",
     "Always Deny": "总是拒绝",
     "Agent Decides": "智能体决策",
@@ -903,7 +903,7 @@
     "Asks for Review - Agent always asks for review.": "请求审查 - 智能体始终会请求审查。",
     "Asks for Review": "请求审查",
     "Always Proceeds": "始终继续",
-    "Always Proceed": "自动继续",
+    "Always Proceed": "始终继续",
     "Command Auto Execution": "命令自动执行",
     "Always Proceed - Agent never asks for confirmation before executing terminal commands (except those in the Deny list). This provides the Agent with the maximum ability to operate over long periods without intervention, but also has the highest risk of an Agent executing an unsafe terminal command.": "始终继续 - 执行终端命令前从不请求确认（黑名单除外）。提供最强免干预运行能力，但风险也最高。",
     "Request Review - Agent always asks for confirmation before executing terminal commands (except those in the Allow list).": "请求审查 - 执行终端命令之前总是请求确认（白名单除外）。",
@@ -1166,7 +1166,7 @@
     "Configure AI models and view your quota.": "配置 AI 模型并查看您的配额。",
     "Default": "默认",
     "Full Machine": "全机访问 (Full Machine)",
-    "Turbo Mode": "极速模式 (Turbo)",
+    "Turbo Mode": "极速模式 (Turbo Mode)",
     "Custom": "自定义",
     "Requires manual review for all terminal commands and file accesses outside of the working folders.": "需要对工作区文件夹外的所有终端命令和文件访问进行人工审查。",
     "All terminal commands require review. The agent can read or write to any file in the machine.": "所有终端命令均需审查。智能体可以读写机器上的任意文件。",
@@ -2565,7 +2565,7 @@
     "Unable to resolve audio source URL": "无法解析音频源 URL",
     "Uncommitted": "未提交",
     "Undo To Here": "撤销至此处",
-    "Undo to this point": "撤销到此处",
+    "Undo to this point": "回退到此节点",
     "Unfold code block": "展开代码块",
     "United States": "美国",
     "Unknown": "未知",
@@ -5223,8 +5223,6 @@
     "folder": "文件夹"
   },
   "reverse_map": {
-    "始终询问": "Always Ask",
-    "自动继续": "Always Proceed",
     "继承全局": "Inherit Global",
     "允许": "Allow",
     "拒绝": "Deny",
@@ -5236,7 +5234,6 @@
     "跟随系统": "System",
     "继承系统": "Inherit",
     "无正在运行的智能体": "No agents running",
-    "极速模式 (Turbo)": "Turbo Mode",
     "默认浅色": "Default Light",
     "默认深色": "Default Dark",
     "较窄": "Narrow",
@@ -5266,7 +5263,10 @@
     "软件工程": "Software Engineering",
     "极高": "Extra",
     "本地检出": "Local Checkout",
-    "在新的工作树 (Worktree) 中工作": "Work in a New Worktree"
+    "在新的工作树 (Worktree) 中工作": "Work in a New Worktree",
+    "总是询问": "Always Ask",
+    "始终继续": "Always Proceed",
+    "极速模式 (Turbo Mode)": "Turbo Mode"
   },
   "regex_rules": [
     {
