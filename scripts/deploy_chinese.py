@@ -93,6 +93,18 @@ def launch_antigravity(resources_dir):
     if sys.platform == "win32":
         exe_path = os.path.join(os.path.dirname(resources_dir), "Antigravity.exe")
         if os.path.exists(exe_path):
+            import ctypes
+            ret = ctypes.windll.shell32.ShellExecuteW(
+                None,
+                "open",
+                exe_path,
+                "--remote-debugging-port=0",
+                os.path.dirname(exe_path),
+                1,
+            )
+            if ret > 32:
+                print(f"[✓] 已启动 Antigravity (已启用 CDP 端口): {exe_path}")
+                return True
             os.startfile(exe_path)
             print(f"[✓] 已启动 Antigravity: {exe_path}")
             return True

@@ -23,8 +23,9 @@ Google Antigravity 桌面端深度汉化包与自动同步工程方案（基于 
    python scripts/deploy_chinese.py
    ```
 3. **彻底退出 Antigravity**（右键任务栏右下角系统托盘图标选择退出），再重新打开即可生效。
-4. **日常防失效启动**：可直接双击 `启动Antigravity(自动检查汉化).bat` 启动客户端；若官方自动更新覆盖了汉化，会自动先补打汉化再拉起客户端。
-5. **还原官方英文**：如需恢复官方原版，双击 `一键还原官方英文.bat`（或执行 `python scripts/deploy_chinese.py --restore`）。
+4. **日常防失效启动**：可直接双击 `启动Antigravity(自动检查汉化).bat` 启动客户端；若官方自动更新覆盖了汉化，会自动先补打汉化再拉起客户端（自动附加 `--remote-debugging-port=0` 确保 `agy-capsule` 额度胶囊稳定挂载）。
+5. **一键安装额度查看插件（可选）**：双击 `一键安装agy-capsule额度插件.bat` 可从官方仓库 [Lumidarin/agy-capsule](https://github.com/Lumidarin/agy-capsule) 自动安装插件并修复桌面/开始菜单/任务栏快捷方式的 CDP 参数。
+6. **还原官方英文**：如需恢复官方原版，双击 `一键还原官方英文.bat`（或执行 `python scripts/deploy_chinese.py --restore`）。
 
 ### 方式二：作为 Antigravity Skill 使用
 将 `skills/Chinesizing` 复制到全局技能目录：
