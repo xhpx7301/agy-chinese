@@ -1,0 +1,43 @@
+name: Sync Upstream Dictionaries
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Sync upstream dicts and merge custom overrides
+        run: |
+          python scripts/sync_upstream.py
+          node --check scripts/i18n_runner.js
+
+      - name: Commit and push if updated
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/i18n_data.json manifest.json README.md
+          git commit -m "chore: sync upstream antigravity2-cn dicts with custom overrides"
+          git push

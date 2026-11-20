@@ -1,0 +1,466 @@
+{
+  "exact": {
+    "Antigravity": "Antigravity",
+    "Check for updates": "检查更新",
+    "Update available": "有可用更新",
+    "Up to date": "已是最新版本",
+    "Restart to update": "重启以应用更新",
+    "Toggle DevTools": "切换开发者工具",
+    "Force Reload": "强制重新加载",
+    "Actual Size": "实际大小",
+    "Close Window": "关闭窗口",
+    "Bring All to Front": "全部置顶",
+    "Pin this conversation": "固定会话",
+    "Unpin this conversation": "取消固定",
+    "Unarchive conversation": "取消归档",
+    "Archive this conversation": "归档会话",
+    "Delete conversation": "删除会话",
+    "Rename this conversation": "重命名会话",
+    "Provide feedback": "提供反馈",
+    "Clear History": "清空历史",
+    "Archived Conversations": "已归档会话",
+    "Implementation Plan": "实施计划",
+    "Walkthrough": "实机演示",
+    "Model Selection": "模型选择",
+    "Working...": "处理中...",
+    "At mention code block": "引用此代码块",
+    "Apply": "应用",
+    "Create": "创建",
+    "Remove": "移除",
+    "Release Notes": "更新日志",
+    "Queue until after the current turn.": "排队等待当前轮次完成后发送。",
+    "Interrupt the agent and send immediately.": "立即打断智能体并发送。",
+    "Turbo Mode": "极速模式 (Turbo)",
+    "Narrow": "较窄",
+    "Wide": "较宽",
+    "Default Light": "默认浅色",
+    "Default Dark": "默认深色",
+    "Your Plan: ": "当前订阅计划: ",
+    "Mcp Tools": "MCP 工具",
+    "Plugin: ": "插件: ",
+    "CONVERSATION": "会话交互",
+    "Always Ask": "始终询问",
+    "Always Proceed": "自动继续",
+    "Inherit Global": "继承全局",
+    "Allow": "允许",
+    "Deny": "拒绝",
+    "Default": "默认",
+    "Enabled": "已启用",
+    "Disabled": "已禁用",
+    "Dark": "深色模式",
+    "Light": "浅色模式",
+    "System": "跟随系统",
+    "Inherit": "继承系统",
+    "Bundled with the app": "软件内置",
+    "Installed by you": "用户安装",
+    "Listed in your config": "用户配置",
+    "Found in this workspace": "工作区发现",
+    "No agents running": "无正在运行的智能体",
+    "Analyzing directory": "分析目录中",
+    "Searching the web": "搜索网络中",
+    "Editing file": "编辑文件中",
+    "Viewing file": "查看文件中",
+    "Generating image": "生成图片中",
+    "Directory analysis": "目录分析",
+    "Web search": "网络搜索",
+    "File edit": "文件编辑",
+    "Semantic search": "语义搜索",
+    "Queue": "排队",
+    "Send Immediately": "立即发送",
+    "Check for updates automatically": "自动检查更新",
+    "Automatically check for updates": "自动检查更新",
+    "tools enabled": "个工具已启用",
+    "tool enabled": "个工具已启用",
+    "Selection Actions": "选区浮动操作栏",
+    "Jetski Chat": "Jetski 团队协作机器人",
+    "For help, visit": "如需帮助，请访问",
+    "or join the": "或加入",
+    "chat space": "交流群组",
+    "Recommended": "推荐",
+    "CitC Settings": "CitC 代码库设置",
+    "CitC settings have moved": "CitC 设置已迁移",
+    "CitC settings have moved to the Advanced section of General settings.": "CitC 设置已整合至常规设置的高级分类下。",
+    "Typeahead menu": "自动补全菜单",
+    "High": "高",
+    "Medium": "中",
+    "Low": "低",
+    "Google AI Pro": "Google AI 专业版",
+    "Google AI Ultra": "Google AI 旗舰版",
+    "including": "包含其中的",
+    "Agent settings and permissions for conversations outside of projects": "管理未关联项目的会话的智能体设置与权限。",
+    "Remote": "远程",
+    "Error": "错误",
+    "Added": "已添加",
+    "Custom": "自定义",
+    "MCP tools": "MCP 工具",
+    "Open In": "打开方式",
+    "Other": "其他",
+    "Read files": "读取文件",
+    "System default": "系统默认",
+    "After": "之后",
+    "Before": "之前",
+    "Auto": "自动",
+    "Block": "阻止",
+    "Code": "代码",
+    "Color": "颜色",
+    "Days": "天",
+    "Enterprise": "企业版",
+    "Every day": "每天",
+    "Every hour": "每小时",
+    "Every week": "每周",
+    "Every weekday": "每个工作日",
+    "Folder": "文件夹",
+    "Icon": "图标",
+    "Layout": "布局",
+    "Local": "本地",
+    "Navigation": "导航",
+    "Pull Requests": "拉取请求 (PR)",
+    "Readme": "自述文件",
+    "Repository": "代码仓库",
+    "Standalone": "独立窗口",
+    "Tree": "树状视图",
+    "Website": "网站",
+    "Write files": "写入文件",
+    "No Project": "无项目",
+    "Turbo": "极速 (Turbo)",
+    "Default and Auto need the terminal sandbox, which isn't available on this host.": "“默认”和“自动”模式需要终端沙箱，但当前主机不支持该功能。",
+    "Knowledge Work": "知识工作",
+    "Software Engineering": "软件工程",
+    "Built-in Browser": "内置浏览器",
+    "External Browser": "外部浏览器",
+    "Settings for conversations outside of projects.": "项目外会话的相关设置。",
+    "No hosts in ~/.ssh/config yet": "~/.ssh/config 中暂无主机",
+    "Change…": "更改...",
+    "Search Hosts…": "搜索主机...",
+    "Connect to SSH Host…": "连接到 SSH 主机...",
+    "Build, package, and debug MCP Apps for Antigravity: MCP server tools whose results render as interactive UI in the conversation, in the side pane, or full-page from the sidebar. Use when adding a UI to an MCP tool, building or theming the app itself, packaging it as a plugin, or debugging an app that doesn't render or behave as expected.": "为 Antigravity 构建、打包和调试 MCP 应用：使 MCP 服务器工具的结果可在对话中、侧边窗格或侧边栏全页中以交互式 UI 渲染。",
+    "ONLY for the native-swarm worker whose brief says it is the monitor. On a timer, it checks whether the whole swarm has stalled and calls on the one member who can unstick it. Coordinators and other workers: do not load this.": "仅限任务简报中指定为监控者（Monitor）的原生蜂群工作智能体使用。定时检查整个蜂群是否停滞并唤醒可推进任务的成员。",
+    "ONLY for the native-swarm worker whose brief says it is the narrator. It watches the board and keeps the facts behind the user's Overview (view.json) current. Coordinators and other workers: do not load this.": "仅限任务简报中指定为解说者（Narrator）的原生蜂群工作智能体使用。持续关注消息板并保持用户概览视图（view.json）的数据实时更新。",
+    "What the coordinator writes so the Swarm UI's Overview can show the swarm's goal, its groups of work and a screenshot timeline. Load it before you brief and add the first workers to a swarm.": "协调器用于向蜂群 UI 概览面板提供蜂群目标、工作分组及截图时间线的规范说明。",
+    "Search shortcuts…": "搜索快捷键...",
+    "Unlock the power of agent swarms.": "解锁智能体蜂群（Swarm）的强大能力。",
+    "You have used some of your weekly limit, it will fully refresh in": "您已使用部分每周额度，完全刷新倒计时：",
+    "You have used some of your 5-hour limit, it will fully refresh in": "您已使用部分 5 小时额度，完全刷新倒计时：",
+    "Duplicate Tab": "复制标签页",
+    "Monitor AI model remaining quotas and reset times in the Antigravity 2.0 auxiliary pane.": "在 Antigravity 2.0 辅助窗格中实时监控 AI 模型剩余配额与重置时间。",
+    "Real-time AI model quota monitor panel for Antigravity 2.0.": "适用于 Antigravity 2.0 的实时 AI 模型配额监控面板。",
+    "For most deep reasoning and complex problems": "适用于大多数深度推理和复杂问题",
+    "Extra": "极高",
+    "Unavailable": "不可用",
+    "Argon that may offload routine steps to Hydrogen. Same Argon-level quality, fewer tokens used.": "Argon 模型，可将常规步骤分流至 Hydrogen 处理。保持同等 Argon 级质量，同时消耗更少 Token。",
+    "Neon that may offload routine steps to Hydrogen. Same Neon-level quality, fewer tokens used.": "Neon 模型，可将常规步骤分流至 Hydrogen 处理。保持同等 Neon 级质量，同时消耗更少 Token。",
+    "Select Permission": "选择权限",
+    "The original Gemini 4 model for advanced workflows": "适用于高级工作流的初代 Gemini 4 模型",
+    "For speed and efficiency in execution tasks": "适用于追求速度与效率的执行类任务",
+    "GPT-OSS will be removed from Antigravity on November 30, 2026.": "GPT-OSS 将于 2026 年 11 月 30 日从 Antigravity 中移除。",
+    "Gemini 4 Carbon is currently available to Ultra plan subscribers.": "Gemini 4 Carbon 目前仅向 Ultra 套餐订阅用户开放。",
+    "Copy project name": "复制项目名称",
+    "Copy Project Path": "复制项目路径",
+    "Copy project path": "复制项目路径",
+    "Copy Project ID": "复制项目 ID",
+    "Copy Folder Path": "复制文件夹路径",
+    "Copy Workspace Path": "复制工作区路径",
+    "Copy Relative Path": "复制相对路径",
+    "Show in Explorer": "在文件资源管理器中显示",
+    "Reveal in File Explorer": "在文件资源管理器中显示",
+    "Show in Finder": "在访达中显示",
+    "Show in Folder": "在文件夹中显示",
+    "Open Project Settings": "打开项目设置",
+    "Delete project": "删除项目",
+    "Delete project?": "删除项目？",
+    "Archive Project": "归档项目",
+    "Rename Project": "重命名项目",
+    "Rename project": "重命名项目",
+    "Open Project": "打开项目",
+    "Remove Project": "移除项目",
+    "Remove Folder": "移除文件夹",
+    "Remove folder": "移除文件夹",
+    "Add folder": "添加文件夹",
+    "Pin Project": "置顶项目",
+    "Unpin Project": "取消置顶项目",
+    "Open in Terminal": "在终端中打开",
+    "Open in Integrated Terminal": "在集成终端中打开",
+    "Open in Antigravity": "在 Antigravity 中打开",
+    "Open Folder in New Window": "在新窗口中打开文件夹",
+    "No projects": "暂无项目",
+    "No projects found": "未找到项目",
+    "No matching projects": "未找到匹配的项目",
+    "Local Checkout": "本地检出",
+    "Stop Voice mode": "停止语音模式",
+    "Start voice mode": "开启语音模式",
+    "Stop voice mode": "停止语音模式",
+    "Undo to this point": "撤销到此处",
+    "Just now": "刚刚",
+    "a few seconds ago": "几秒前",
+    "Where should we pick up?": "我们从哪里开始？",
+    "Are you sure you want to delete this project": "确定要删除此项目",
+    "Are you sure you want to delete the conversation": "确定要删除会话",
+    "Are you sure you want to delete this conversation": "确定要删除此会话",
+    "within it.": "。",
+    "inside it.": "。",
+    "Work in a New Worktree": "在新的工作树 (Worktree) 中工作",
+    "Work in a new worktree": "在新的工作树 (Worktree) 中工作",
+    "Record audio": "录制语音",
+    "Stop Audio Recording": "停止语音录制",
+    "Are you sure you want to": "确定要",
+    "the project": "项目",
+    "the conversation": "会话",
+    "the workspace": "工作区",
+    "the folder": "文件夹",
+    "the file": "文件",
+    "Cannot be undone.": "无法撤销。",
+    "No conversations": "暂无会话",
+    "Filter projects...": "筛选项目...",
+    "Filter conversations...": "筛选会话...",
+    "Switch Branch": "切换分支",
+    "Create Branch": "创建分支",
+    "Discard Changes": "放弃更改",
+    "No changes": "无更改",
+    "Attach file": "附加文件",
+    "Attach files": "附加文件",
+    "Stop generating": "停止生成",
+    "Voice input": "语音输入",
+    "Dictate": "语音听写",
+    "delete the project": "删除项目",
+    "delete this project": "删除此项目",
+    "delete the conversation": "删除会话",
+    "delete this conversation": "删除此会话",
+    "Are you sure you want to delete this": "确定要删除此",
+    "project": "项目",
+    "conversation": "会话",
+    "folder": "文件夹"
+  },
+  "reverse_map": {
+    "始终询问": "Always Ask",
+    "自动继续": "Always Proceed",
+    "继承全局": "Inherit Global",
+    "允许": "Allow",
+    "拒绝": "Deny",
+    "默认": "Default",
+    "已启用": "Enabled",
+    "已禁用": "Disabled",
+    "深色模式": "Dark",
+    "浅色模式": "Light",
+    "跟随系统": "System",
+    "继承系统": "Inherit",
+    "无正在运行的智能体": "No agents running",
+    "极速模式 (Turbo)": "Turbo Mode",
+    "默认浅色": "Default Light",
+    "默认深色": "Default Dark",
+    "较窄": "Narrow",
+    "较宽": "Wide",
+    "排队等待当前轮次完成后发送。": "Queue until after the current turn.",
+    "立即打断智能体并发送。": "Interrupt the agent and send immediately.",
+    "排队": "Queue",
+    "立即发送": "Send Immediately",
+    "高": "High",
+    "中": "Medium",
+    "低": "Low",
+    "系统默认": "System default",
+    "自定义": "Custom",
+    "自动": "Auto",
+    "独立窗口": "Standalone",
+    "本地": "Local",
+    "远程": "Remote",
+    "每天": "Every day",
+    "每小时": "Every hour",
+    "每周": "Every week",
+    "每个工作日": "Every weekday",
+    "极速 (Turbo)": "Turbo",
+    "无项目": "No Project",
+    "内置浏览器": "Built-in Browser",
+    "外部浏览器": "External Browser",
+    "知识工作": "Knowledge Work",
+    "软件工程": "Software Engineering",
+    "极高": "Extra",
+    "本地检出": "Local Checkout",
+    "在新的工作树 (Worktree) 中工作": "Work in a New Worktree"
+  },
+  "regex_rules": [
+    {
+      "pattern": "^Permanently delete\\s+(.*?)\\s+including\\s+(\\d+)\\s+active\\s+conversations?$",
+      "replacement": "永久删除 $1，包括其中的 $2 个活跃会话"
+    },
+    {
+      "pattern": "^Permanently delete\\s+(.*?)\\s+including\\s+(\\d+)\\s+conversations?\\.?$",
+      "replacement": "永久删除 $1，包括其中的 $2 个会话"
+    },
+    {
+      "pattern": "^(\\d+)\\s+active\\s+conversations?$",
+      "replacement": "$1 个活跃会话"
+    },
+    {
+      "pattern": "^(>\\s*)?(\\d+)\\s+tools?\\s+enabled$",
+      "replacement": "$1已启用 $2 个工具"
+    },
+    {
+      "pattern": "^You have used some of your 5-hour limit, it will fully refresh in (.*)\\.$",
+      "replacement": "您已使用部分 5 小时限额，将在 $1 后完全刷新恢复。"
+    },
+    {
+      "pattern": "^You have used some of your weekly limit, it will fully refresh in (.*)\\.$",
+      "replacement": "您已使用部分每周限额，将在 $1 后完全刷新恢复。"
+    },
+    {
+      "pattern": "^(\\d+)\\s+files?,\\s*(\\d+)\\s+search(?:es)?$",
+      "replacement": "$1 个文件，$2 次搜索"
+    },
+    {
+      "pattern": "^Ran (\\d+) commands?\\.?\\s*Working$",
+      "replacement": "已执行 $1 条命令，正在处理中"
+    },
+    {
+      "pattern": "^(Rules|Skills|Mcp Tools):\\s*([\\d,]+)\\s*tokens$",
+      "replacement": "$1: $2 tokens (提示词占用)"
+    },
+    {
+      "pattern": "^Send feedback as (.*)$",
+      "replacement": "以账号 $1 发送反馈"
+    },
+    {
+      "pattern": "^Plugin:\\s*(.*)$",
+      "replacement": "插件: $1"
+    },
+    {
+      "pattern": "^Show (\\d+) breakdown(s?)$",
+      "replacement": "查看 $1 项明细"
+    },
+    {
+      "pattern": "^See all \\((\\d+)\\)$",
+      "replacement": "查看全部 ($1)"
+    },
+    {
+      "pattern": "^(\\d+(?:\\.\\d+)?)% of the customization budget is available\\.$",
+      "replacement": "$1% 的自定义扩展配额可用。"
+    },
+    {
+      "pattern": "^(\\d+) agent(s?) running$",
+      "replacement": "$1 个智能体正在运行"
+    },
+    {
+      "pattern": "^No more older messages, showing (\\d+) of (\\d+)$",
+      "replacement": "已显示全部历史消息 (共 $2 条)"
+    },
+    {
+      "pattern": "^Load older messages, showing (\\d+) of (\\d+)$",
+      "replacement": "加载更早历史消息 (当前 $1 / 共 $2 条)"
+    },
+    {
+      "pattern": "^Select model, current: (.*)$",
+      "replacement": "选择模型，当前: $1"
+    },
+    {
+      "pattern": "^Worked for (.*)$",
+      "replacement": "耗时 $1"
+    },
+    {
+      "pattern": "^Thought for (.*)$",
+      "replacement": "思考用时 $1"
+    },
+    {
+      "pattern": "^Exploring (\\d+) files?, (\\d+) folders?$",
+      "replacement": "正在检索 $1 个文件，$2 个文件夹"
+    },
+    {
+      "pattern": "^(\\d+) files? changed$",
+      "replacement": "$1 个文件已修改"
+    },
+    {
+      "pattern": "^(\\d+) file(s?)$",
+      "replacement": "$1 个文件"
+    },
+    {
+      "pattern": "^(\\d+) command(s?)$",
+      "replacement": "$1 条命令"
+    },
+    {
+      "pattern": "^Skills (\\d+)$",
+      "replacement": "技能列表 ($1)"
+    },
+    {
+      "pattern": "^Rules (\\d+)$",
+      "replacement": "规则列表 ($1)"
+    },
+    {
+      "pattern": "^Plugins (\\d+)$",
+      "replacement": "插件列表 ($1)"
+    },
+    {
+      "pattern": "^(\\d+)m ago$",
+      "replacement": "$1 分钟前"
+    },
+    {
+      "pattern": "^(\\d+)h ago$",
+      "replacement": "$1 小时前"
+    },
+    {
+      "pattern": "^(\\d+)d ago$",
+      "replacement": "$1 天前"
+    },
+    {
+      "pattern": "^(.+?) Weekly Limit$",
+      "replacement": "$1 每周额度"
+    },
+    {
+      "pattern": "^(.+?) 5-Hour Limit$",
+      "replacement": "$1 5 小时额度"
+    },
+    {
+      "pattern": "^(\\d+\\s*days?(?:,\\s*\\d+\\s*hours?)?|\\d+\\s*hours?(?:,\\s*\\d+\\s*minutes?)?|\\d+\\s*minutes?(?:,\\s*\\d+\\s*seconds?)?)$",
+      "replacement": "$1"
+    },
+    {
+      "pattern": "^(.+?) that may offload routine steps to (.+?)\\. Same (.+?)-level quality, fewer tokens used\\.$",
+      "replacement": "$1 模型，可将常规步骤分流至 $2 处理。保持同等 $3 级质量，同时消耗更少 Token。"
+    },
+    {
+      "pattern": "^(.+?) will be removed from Antigravity on (.+?)\\.$",
+      "replacement": "$1 将于 $2 从 Antigravity 中移除。"
+    },
+    {
+      "pattern": "^(.+?) is currently available to (.+?) plan subscribers\\.$",
+      "replacement": "$1 目前仅向 $2 套餐订阅用户开放。"
+    },
+    {
+      "pattern": "^Welcome back,\\s*(.+?)\\.\\s*Where should we pick up\\?$",
+      "replacement": "欢迎回来，$1。我们从哪里开始？"
+    },
+    {
+      "pattern": "^Welcome,\\s*(.+?)\\.\\s*Where should we pick up\\?$",
+      "replacement": "欢迎，$1。我们从哪里开始？"
+    },
+    {
+      "pattern": "^(\\d+)s ago$",
+      "replacement": "$1 秒前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+seconds?\\s+ago$",
+      "replacement": "$1 秒前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+minutes?\\s+ago$",
+      "replacement": "$1 分钟前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+hours?\\s+ago$",
+      "replacement": "$1 小时前"
+    },
+    {
+      "pattern": "^(\\d+)\\s+days?\\s+ago$",
+      "replacement": "$1 天前"
+    },
+    {
+      "pattern": "^This undo action will revert (\\d+) files?\\.?$",
+      "replacement": "此撤销操作将还原 $1 个文件。"
+    },
+    {
+      "pattern": "^Are you sure you want to delete (?:the )?project\\s+(.+?)\\??$",
+      "replacement": "确定要删除项目 $1？"
+    },
+    {
+      "pattern": "^Are you sure you want to delete (?:the )?conversation\\s+(.+?)\\??$",
+      "replacement": "确定要删除会话 $1？"
+    }
+  ],
+  "exemptions": []
+}
