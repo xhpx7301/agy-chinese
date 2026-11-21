@@ -190,6 +190,18 @@
         }
     }
 
+    var observedShadows = typeof WeakSet === "function" ? new WeakSet() : null;
+    function observeShadow(sr) {
+        if (!sr || !observer) return;
+        if (observedShadows) {
+            if (observedShadows.has(sr)) return;
+            observedShadows.add(sr);
+        }
+        try {
+            observer.observe(sr, { childList: true, subtree: true });
+        } catch (e) {}
+    }
+
     function translateSubtree(root) {
         if (!root) return;
         if (root.nodeType === 3) {
@@ -201,6 +213,7 @@
                 if (isInsideExcluded(root)) return;
                 translateElementAttributes(root);
                 if (root.shadowRoot) {
+                    observeShadow(root.shadowRoot);
                     translateSubtree(root.shadowRoot);
                 }
             }
@@ -214,6 +227,7 @@
                 var el = elementsWithAttrs[i];
                 translateElementAttributes(el);
                 if (el.shadowRoot) {
+                    observeShadow(el.shadowRoot);
                     translateSubtree(el.shadowRoot);
                 }
             }
