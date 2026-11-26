@@ -35,7 +35,7 @@ End Function
 Dim pyCmd
 pyCmd = FindPythonCommand()
 If pyCmd = "" Then
-    MsgBox "未找到 Python 3 环境，无法执行自动检查与启动。请先安装 Python 3.8+ 并勾选 Add to PATH。", 16, "agy-chinese"
+    MsgBox "Python 3 not found. Please install Python 3.8+ with Add to PATH enabled.", 16, "agy-chinese"
     WScript.Quit 1
 End If
 
@@ -43,6 +43,6 @@ shell.CurrentDirectory = repoDir
 cmdLine = pyCmd & " """ & pyScript & """ --check-and-launch --silent"
 rc = shell.Run(cmdLine, 0, True)
 If rc <> 0 Then
-    MsgBox "Antigravity 自动检查汉化或启动失败（退出码: " & rc & "）。请尝试手动运行 一键汉化.bat 查看详细报错。", 16, "agy-chinese"
+    MsgBox "Antigravity i18n check or launch failed (exit code: " & rc & "). Please run deploy_chinese.py manually to inspect.", 16, "agy-chinese"
     WScript.Quit rc
 End If
