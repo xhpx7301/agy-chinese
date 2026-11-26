@@ -152,7 +152,14 @@ def install_via_release_exe():
         shutil.rmtree(work_dir, ignore_errors=True)
 
 
-def run_plugin_script(repo_dir, action):
+def cleanup_plugin_dir_best_effort(plugin_dir):
+    if not os.path.exists(plugin_dir):
+        return True
+    shutil.rmtree(plugin_dir, ignore_errors=True)
+    return not os.path.exists(plugin_dir)
+
+
+def run_plugin_script(repo_dir, action, allow_fail=False):
     installer_js = os.path.join(repo_dir, "tools", "install-plugin.cjs")
     if not os.path.exists(installer_js):
         raise RuntimeError(f"未找到安装脚本: {installer_js}")
@@ -160,7 +167,10 @@ def run_plugin_script(repo_dir, action):
     if action in ("install", "uninstall") and has_agy_chinese_shortcuts():
         cmd.append("--no-shortcuts")
         print("[*] 检测到 agy-chinese 防失效快捷方式，已保留现有快捷方式不被覆盖。")
-    subprocess.run(cmd, cwd=repo_dir, check=True)
+    res = subprocess.run(cmd, cwd=repo_dir, capture_output=allow_fail, text=True)
+    if res.returncode != 0 and not allow_fail:
+        raise subprocess.CalledProcessError(res.returncode, cmd)
+    return res
 
 
 def main():
@@ -190,8 +200,18 @@ def main():
             sys.exit(1)
         if not os.path.exists(os.path.join(repo_dir, "tools", "install-plugin.cjs")):
             sync_source_repo(repo_dir)
-        run_plugin_script(repo_dir, "uninstall")
-        print("[✓] obsidian-prism 已卸载。")
+        res = run_plugin_script(repo_dir, "uninstall", allow_fail=True)
+        if res.stdout:
+            print(res.stdout.strip())
+        plugin_dir = get_plugin_target_dir()
+        fully_removed = cleanup_plugin_dir_best_effort(plugin_dir)
+        if res.returncode != 0 and not fully_removed:
+            print("[!] 注意：Antigravity 仍在运行，部分插件目录文件被系统句柄锁定（EBUSY），插件注册与后台守护已停用。")
+            print("    彻底退出 Antigravity（含托盘）后重开即生效；重开后如需彻底清空残留目录，可再执行一次 --uninstall。")
+        elif not fully_removed:
+            print(f"[!] 插件已停用，但目录尚有文件被占用: {plugin_dir}，彻底退出 Antigravity 后即可删除。")
+        else:
+            print("[✓] obsidian-prism 已彻底卸载。")
         return
 
     if node_major >= 22:
