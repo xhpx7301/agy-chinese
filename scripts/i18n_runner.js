@@ -358,6 +358,206 @@
         } catch (e) {}
     }
 
+    var PANEL_ID = "__antigravity_i18n_lang_panel__";
+    var APPEARANCE_SUBTITLES = {
+        "Configure the agent's visual theme and display preferences.": true,
+        "配置智能体的视觉主题与显示偏好设置。": true
+    };
+    var APPEARANCE_ANCHORS = {
+        "Font Size": true,
+        "字体大小": true,
+        "Theme Mode": true,
+        "主题模式": true,
+        "Accent": true,
+        "强调颜色": true,
+        "Interface Layout": true,
+        "界面布局": true,
+        "Light Theme": true,
+        "浅色主题": true,
+        "Theme": true,
+        "主题": true
+    };
+    var APPEARANCE_TITLES = {
+        "Appearance": true,
+        "外观": true
+    };
+
+    function findTextMatchInSubtree(root, matchMap) {
+        if (!root) return null;
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+        var node;
+        while ((node = walker.nextNode())) {
+            var parent = node.parentNode;
+            if (!parent || parent.nodeType !== 1) continue;
+            if (isInsideExcluded(parent)) continue;
+            var txt = (node.nodeValue || "").trim();
+            if (txt && matchMap[txt]) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    function findAppearanceListContainer() {
+        var root = document.body || document.documentElement;
+        if (!root) return null;
+
+        var subEl = findTextMatchInSubtree(root, APPEARANCE_SUBTITLES);
+        var pageRoot = null;
+        var anchorEl = null;
+
+        if (subEl) {
+            var curr = subEl.parentNode;
+            for (var depth = 0; curr && curr !== document.documentElement && depth < 7; depth++) {
+                anchorEl = findTextMatchInSubtree(curr, APPEARANCE_ANCHORS);
+                if (anchorEl) {
+                    pageRoot = curr;
+                    break;
+                }
+                curr = curr.parentNode;
+            }
+        } else {
+            var candAnchor = findTextMatchInSubtree(root, APPEARANCE_ANCHORS);
+            if (candAnchor) {
+                var p = candAnchor.parentNode;
+                for (var d = 0; p && p !== document.documentElement && d < 6; d++) {
+                    if (findTextMatchInSubtree(p, APPEARANCE_TITLES)) {
+                        pageRoot = p;
+                        anchorEl = candAnchor;
+                        break;
+                    }
+                    p = p.parentNode;
+                }
+            }
+        }
+
+        if (!pageRoot || !anchorEl) return null;
+
+        var row = anchorEl;
+        while (row && row.parentNode && row.parentNode !== pageRoot) {
+            var parent = row.parentNode;
+            var childCount = parent.children ? parent.children.length : (parent.childNodes ? parent.childNodes.length : 0);
+            if (childCount >= 2 && parent !== subEl) {
+                return parent;
+            }
+            row = parent;
+        }
+        return pageRoot;
+    }
+
+    function updateAppearancePanelState(panel) {
+        if (!panel) return;
+        var isEn = currentLang === "en";
+        var titleEl = panel.querySelector ? panel.querySelector("[data-i18n-role='title']") : panel.__i18nTitleEl;
+        var descEl = panel.querySelector ? panel.querySelector("[data-i18n-role='desc']") : panel.__i18nDescEl;
+        var zhBtn = panel.querySelector ? panel.querySelector("[data-i18n-lang='zh-CN']") : panel.__i18nZhBtn;
+        var enBtn = panel.querySelector ? panel.querySelector("[data-i18n-lang='en']") : panel.__i18nEnBtn;
+
+        if (titleEl) titleEl.textContent = isEn ? "Display Language" : "界面语言";
+        if (descEl) {
+            descEl.textContent = isEn
+                ? "Switch interface language instantly without restarting (Alt+Shift+L)"
+                : "即时切换界面显示语言，无需重启（快捷键 Alt+Shift+L）";
+        }
+        var activeStyle = "padding:5px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:#3b82f6;color:#ffffff;transition:all 0.15s ease;";
+        var idleStyle = "padding:5px 12px;border-radius:6px;border:none;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:inherit;opacity:0.78;transition:all 0.15s ease;";
+        if (zhBtn) {
+            zhBtn.style.cssText = isEn ? idleStyle : activeStyle;
+            zhBtn.setAttribute("aria-pressed", isEn ? "false" : "true");
+        }
+        if (enBtn) {
+            enBtn.style.cssText = isEn ? activeStyle : idleStyle;
+            enBtn.setAttribute("aria-pressed", isEn ? "true" : "false");
+        }
+    }
+
+    function buildAppearancePanel() {
+        var panel = document.createElement("div");
+        panel.id = PANEL_ID;
+        panel.setAttribute("data-i18n-ignore", "true");
+        panel.style.cssText =
+            "display:flex;align-items:center;justify-content:space-between;gap:16px;" +
+            "padding:14px 16px;margin-top:12px;border-radius:10px;" +
+            "border:1px solid rgba(128,128,128,0.22);background:rgba(128,128,128,0.06);";
+
+        var left = document.createElement("div");
+        left.style.cssText = "min-width:0;flex:1;";
+
+        var title = document.createElement("div");
+        title.setAttribute("data-i18n-role", "title");
+        title.style.cssText = "font-size:13px;font-weight:600;line-height:1.4;color:inherit;";
+
+        var desc = document.createElement("div");
+        desc.setAttribute("data-i18n-role", "desc");
+        desc.style.cssText = "font-size:12px;line-height:1.4;opacity:0.72;margin-top:2px;color:inherit;";
+
+        left.appendChild(title);
+        left.appendChild(desc);
+
+        var pill = document.createElement("div");
+        pill.style.cssText =
+            "display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:8px;" +
+            "border:1px solid rgba(128,128,128,0.24);background:rgba(128,128,128,0.08);flex-shrink:0;";
+
+        var zhBtn = document.createElement("button");
+        zhBtn.type = "button";
+        zhBtn.setAttribute("data-i18n-lang", "zh-CN");
+        zhBtn.textContent = "简体中文";
+        zhBtn.addEventListener("click", function () {
+            window.__antigravity_setLang("zh-CN");
+        });
+
+        var enBtn = document.createElement("button");
+        enBtn.type = "button";
+        enBtn.setAttribute("data-i18n-lang", "en");
+        enBtn.textContent = "English";
+        enBtn.addEventListener("click", function () {
+            window.__antigravity_setLang("en");
+        });
+
+        pill.appendChild(zhBtn);
+        pill.appendChild(enBtn);
+        panel.appendChild(left);
+        panel.appendChild(pill);
+
+        panel.__i18nTitleEl = title;
+        panel.__i18nDescEl = desc;
+        panel.__i18nZhBtn = zhBtn;
+        panel.__i18nEnBtn = enBtn;
+        updateAppearancePanelState(panel);
+        return panel;
+    }
+
+    function ensureAppearancePanel() {
+        try {
+            var container = findAppearanceListContainer();
+            var existing = document.getElementById(PANEL_ID);
+            if (!container) {
+                if (existing && existing.parentNode) {
+                    existing.parentNode.removeChild(existing);
+                }
+                return;
+            }
+            if (!existing) {
+                existing = buildAppearancePanel();
+            } else {
+                updateAppearancePanelState(existing);
+            }
+            if (existing.parentNode !== container) {
+                container.appendChild(existing);
+            }
+        } catch (e) {}
+    }
+
+    var appearanceSyncTimer = null;
+    function scheduleAppearancePanelSync() {
+        if (appearanceSyncTimer) clearTimeout(appearanceSyncTimer);
+        appearanceSyncTimer = setTimeout(function () {
+            appearanceSyncTimer = null;
+            ensureAppearancePanel();
+        }, 40);
+    }
+
     function applyLang(nextLang, showNotice) {
         var targetLang = nextLang === "en" ? "en" : "zh-CN";
         if (targetLang === currentLang) return;
@@ -370,6 +570,7 @@
             translateWholePage();
             if (showNotice) showToast("界面语言：简体中文 (Alt+Shift+L 切换)");
         }
+        ensureAppearancePanel();
     }
 
     window.__antigravity_getLang = function () { return currentLang; };
@@ -395,26 +596,48 @@
     if (currentLang !== "en") {
         translateWholePage();
     }
+    ensureAppearancePanel();
 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", translateWholePage);
+        document.addEventListener("DOMContentLoaded", function () {
+            translateWholePage();
+            ensureAppearancePanel();
+        });
     }
-    window.addEventListener("load", translateWholePage);
+    window.addEventListener("load", function () {
+        translateWholePage();
+        ensureAppearancePanel();
+    });
 
     // SPA client-side routing triggers
-    window.addEventListener("popstate", function () { setTimeout(translateWholePage, 50); });
-    window.addEventListener("hashchange", function () { setTimeout(translateWholePage, 50); });
+    window.addEventListener("popstate", function () {
+        setTimeout(function () {
+            translateWholePage();
+            ensureAppearancePanel();
+        }, 50);
+    });
+    window.addEventListener("hashchange", function () {
+        setTimeout(function () {
+            translateWholePage();
+            ensureAppearancePanel();
+        }, 50);
+    });
 
     // Multi-turn progressive scans for React initial async rendering
     var scanDelays = [100, 250, 500, 1000, 1800, 3000, 5000];
     for (var k = 0; k < scanDelays.length; k++) {
-        setTimeout(translateWholePage, scanDelays[k]);
+        setTimeout(function () {
+            translateWholePage();
+            ensureAppearancePanel();
+        }, scanDelays[k]);
     }
 
     // 5. High-Performance MutationObserver (observes childList on documentElement)
     var isTranslating = false;
     var observer = new MutationObserver(function (mutations) {
-        if (isTranslating || currentLang === "en") return;
+        if (isTranslating) return;
+        scheduleAppearancePanelSync();
+        if (currentLang === "en") return;
         isTranslating = true;
         try {
             for (var i = 0; i < mutations.length; i++) {
@@ -446,6 +669,7 @@
     // Debounced interaction re-scan for in-place React text updates (avoids characterData loop)
     var interactionTimer = null;
     function scheduleInteractionScan() {
+        scheduleAppearancePanelSync();
         if (currentLang === "en") return;
         if (interactionTimer) clearTimeout(interactionTimer);
         interactionTimer = setTimeout(function () {

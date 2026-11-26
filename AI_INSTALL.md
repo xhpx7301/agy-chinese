@@ -49,5 +49,5 @@ python scripts/deploy_chinese.py --restore-shortcut
 python scripts/deploy_chinese.py --restore
 ```
 
-## 3. 客户端内快捷键
-汉化激活后，可在 Antigravity 任意窗口按下 **`Alt + Shift + L`** 实时切换 **简体中文 ↔ English (原版)**，无需重启或还原 `app.asar`。
+## 3. 客户端内可视化与快捷键切换
+汉化激活后，可在 **设置 → 外观（Settings → Appearance）** 页面底部直接点击 **界面语言（简体中文 | English）** 开关，或在任意窗口按下 **`Alt + Shift + L`** 实时切换 **简体中文 ↔ English (原版)**，无需重启或还原 `app.asar`。

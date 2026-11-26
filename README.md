@@ -9,7 +9,7 @@ Google Antigravity 桌面端深度汉化包与自动同步工程方案（基于 
   - 覆盖主窗口、弹窗、SPA 路由切换、Shadow DOM 以及交互防抖扫描（`click` / `contextmenu` / `mousedown` / `keyup` / `focusin`）。
   - 覆盖 Electron 原生应用菜单（`menu.js`）、系统托盘菜单与动态智能体计数（`tray.js`）、退出确认框、更新提示（`updater.js`）以及全部原生右键菜单（`ipcHandlers.js`）。
 - **免重启实时中英切换与内容区隔离**：
-  - 基于 `WeakMap` 记录已翻译节点与属性的原始英文文本，客户端内按 **`Alt + Shift + L`** 即可一键在 **简体中文 ↔ English (原版)** 之间实时切换（支持跨窗口同步）。
+  - 基于 `WeakMap` 记录已翻译节点与属性的原始英文文本，在 **设置 → 外观（Settings → Appearance）** 页面底部嵌入可视化 **界面语言切换开关（简体中文 | English）**，也可按 **`Alt + Shift + L`** 随时一键实时切换（支持跨窗口同步）。
   - 严格跳过代码编辑器（Monaco / CodeMirror）、集成终端（xterm）、代码块及可编辑区域，防止误翻代码或终端内容。
 - **双模式注入（全量 `app.asar` + 零改包 CDP）**：
   - 默认采用 `app.asar` 全量部署 + GitHub 热同步；同时提供零依赖的 `scripts/cdp_inject.mjs`（支持 `--watch` 守护及 `--dump-untranslated` 漏翻词条探测），适合 macOS 保签名或临时免改包调试。
@@ -30,7 +30,7 @@ Google Antigravity 桌面端深度汉化包与自动同步工程方案（基于 
 3. **彻底退出 Antigravity**（右键任务栏右下角系统托盘图标选择退出），再重新打开即可生效。
 4. **日常防失效启动**：可直接双击 `启动Antigravity(自动检查汉化).bat` 启动客户端；或双击 `一键配置桌面防失效快捷方式.bat`（也可执行 `python scripts/deploy_chinese.py --install-shortcut`）将桌面/开始菜单快捷方式升级为无黑框静默自检启动，官方更新覆盖后点桌面图标也会自动先补打汉化再拉起客户端（自动附加 `--remote-debugging-port=0`）。
 5. **一键安装额度查看插件（可选）**：双击 `一键安装agy-capsule额度插件.bat` 可从官方仓库 [Lumidarin/agy-capsule](https://github.com/Lumidarin/agy-capsule) 自动安装插件并修复桌面/开始菜单/任务栏快捷方式的 CDP 参数。
-6. **客户端内实时切换中/英文**：汉化激活后，在任意 Antigravity 窗口按下 **`Alt + Shift + L`** 可免重启实时切换简体中文与原版英文。
+6. **客户端内实时切换中/英文**：在 **设置 → 外观** 页面底部点击 **界面语言（简体中文 | English）** 开关，或在任意 Antigravity 窗口按下 **`Alt + Shift + L`** 即可免重启实时切换。
 7. **状态检查与静态校验**：
    ```bash
    python scripts/deploy_chinese.py --status
