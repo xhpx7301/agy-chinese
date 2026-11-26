@@ -21,14 +21,25 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
+    var RUNNER_VERSION = "2026.11.26.3";
+
     if (window.__antigravity_i18n_runner_active) {
-        if (typeof window.__antigravity_translateWholePage === "function" &&
-            (typeof window.__antigravity_getLang !== "function" || window.__antigravity_getLang() !== "en")) {
-            window.__antigravity_translateWholePage();
+        if (window.__antigravity_runner_version === RUNNER_VERSION) {
+            if (typeof window.__antigravity_translateWholePage === "function" &&
+                (typeof window.__antigravity_getLang !== "function" || window.__antigravity_getLang() !== "en")) {
+                window.__antigravity_translateWholePage();
+            }
+            if (typeof window.__antigravity_ensureAppearancePanel === "function") {
+                window.__antigravity_ensureAppearancePanel();
+            }
+            return;
         }
-        return;
+        if (typeof window.__antigravity_runner_cleanup === "function") {
+            try { window.__antigravity_runner_cleanup(); } catch (e) {}
+        }
     }
     window.__antigravity_i18n_runner_active = true;
+    window.__antigravity_runner_version = RUNNER_VERSION;
 
     // 1. Controlled Component Reverse Map Hook (Protects Base UI / Radix Select states)
     if (!window.__antigravity_map_hooked) {
@@ -363,19 +374,22 @@
         "Configure the agent's visual theme and display preferences.": true,
         "配置智能体的视觉主题与显示偏好设置。": true
     };
-    var APPEARANCE_ANCHORS = {
-        "Font Size": true,
-        "字体大小": true,
-        "Theme Mode": true,
-        "主题模式": true,
-        "Accent": true,
-        "强调颜色": true,
-        "Interface Layout": true,
-        "界面布局": true,
-        "Light Theme": true,
-        "浅色主题": true,
-        "Theme": true,
-        "主题": true
+    var APPEARANCE_ANCHOR_GROUPS = {
+        "Font Size": "font_size",
+        "字体大小": "font_size",
+        "Theme Mode": "theme_mode",
+        "主题模式": "theme_mode",
+        "Accent": "accent",
+        "强调颜色": "accent",
+        "Interface Layout": "layout",
+        "界面布局": "layout",
+        "Light Theme": "light_theme",
+        "浅色主题": "light_theme",
+        "Dark Theme": "dark_theme",
+        "深色主题": "dark_theme",
+        "Theme": "theme",
+        "主题": "theme",
+        "Themes": "theme"
     };
     var APPEARANCE_TITLES = {
         "Appearance": true,
@@ -384,9 +398,16 @@
 
     function findTextMatchInSubtree(root, matchMap) {
         if (!root) return null;
-        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null, false);
         var node;
         while ((node = walker.nextNode())) {
+            if (node.nodeType === 1) {
+                if (node.shadowRoot) {
+                    var srMatch = findTextMatchInSubtree(node.shadowRoot, matchMap);
+                    if (srMatch) return srMatch;
+                }
+                continue;
+            }
             var parent = node.parentNode;
             if (!parent || parent.nodeType !== 1) continue;
             if (isInsideExcluded(parent)) continue;
@@ -396,6 +417,33 @@
             }
         }
         return null;
+    }
+
+    function countAnchorGroups(root) {
+        if (!root) return 0;
+        var found = {};
+        var count = 0;
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null, false);
+        var node;
+        while ((node = walker.nextNode())) {
+            if (node.nodeType === 1) {
+                if (node.shadowRoot) {
+                    count += countAnchorGroups(node.shadowRoot);
+                    if (count >= 2) return count;
+                }
+                continue;
+            }
+            var parent = node.parentNode;
+            if (!parent || parent.nodeType !== 1 || isInsideExcluded(parent)) continue;
+            var txt = (node.nodeValue || "").trim();
+            var grp = txt ? APPEARANCE_ANCHOR_GROUPS[txt] : null;
+            if (grp && !found[grp]) {
+                found[grp] = true;
+                count++;
+                if (count >= 2) return count;
+            }
+        }
+        return count;
     }
 
     function findAppearanceListContainer() {
@@ -408,8 +456,8 @@
 
         if (subEl) {
             var curr = subEl.parentNode;
-            for (var depth = 0; curr && curr !== document.documentElement && depth < 7; depth++) {
-                anchorEl = findTextMatchInSubtree(curr, APPEARANCE_ANCHORS);
+            for (var depth = 0; curr && curr !== document.documentElement && depth < 8; depth++) {
+                anchorEl = findTextMatchInSubtree(curr, APPEARANCE_ANCHOR_GROUPS);
                 if (anchorEl) {
                     pageRoot = curr;
                     break;
@@ -417,10 +465,10 @@
                 curr = curr.parentNode;
             }
         } else {
-            var candAnchor = findTextMatchInSubtree(root, APPEARANCE_ANCHORS);
+            var candAnchor = findTextMatchInSubtree(root, APPEARANCE_ANCHOR_GROUPS);
             if (candAnchor) {
                 var p = candAnchor.parentNode;
-                for (var d = 0; p && p !== document.documentElement && d < 6; d++) {
+                for (var d = 0; p && p !== document.documentElement && d < 7; d++) {
                     if (findTextMatchInSubtree(p, APPEARANCE_TITLES)) {
                         pageRoot = p;
                         anchorEl = candAnchor;
@@ -436,8 +484,7 @@
         var row = anchorEl;
         while (row && row.parentNode && row.parentNode !== pageRoot) {
             var parent = row.parentNode;
-            var childCount = parent.children ? parent.children.length : (parent.childNodes ? parent.childNodes.length : 0);
-            if (childCount >= 2 && parent !== subEl) {
+            if (parent !== subEl && countAnchorGroups(parent) >= 2) {
                 return parent;
             }
             row = parent;
@@ -579,57 +626,48 @@
         applyLang(currentLang === "en" ? "zh-CN" : "en", true);
     };
 
-    window.addEventListener("storage", function (ev) {
+    var onStorage = function (ev) {
         if (ev && ev.key === STORAGE_KEY && (ev.newValue === "en" || ev.newValue === "zh-CN")) {
             applyLang(ev.newValue, false);
         }
-    });
+    };
+    window.addEventListener("storage", onStorage);
 
-    window.addEventListener("keydown", function (ev) {
+    var onKeyDown = function (ev) {
         if (ev && ev.altKey && ev.shiftKey && !ev.ctrlKey && !ev.metaKey &&
             (ev.key === "L" || ev.key === "l" || ev.code === "KeyL")) {
             ev.preventDefault();
             window.__antigravity_toggleLang();
         }
-    }, true);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+
+    window.__antigravity_ensureAppearancePanel = ensureAppearancePanel;
 
     if (currentLang !== "en") {
         translateWholePage();
     }
     ensureAppearancePanel();
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", function () {
-            translateWholePage();
-            ensureAppearancePanel();
-        });
-    }
-    window.addEventListener("load", function () {
+    var onDomReady = function () {
         translateWholePage();
         ensureAppearancePanel();
-    });
+    };
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", onDomReady);
+    }
+    window.addEventListener("load", onDomReady);
 
-    // SPA client-side routing triggers
-    window.addEventListener("popstate", function () {
-        setTimeout(function () {
-            translateWholePage();
-            ensureAppearancePanel();
-        }, 50);
-    });
-    window.addEventListener("hashchange", function () {
-        setTimeout(function () {
-            translateWholePage();
-            ensureAppearancePanel();
-        }, 50);
-    });
+    var onPopOrHash = function () {
+        setTimeout(onDomReady, 50);
+    };
+    window.addEventListener("popstate", onPopOrHash);
+    window.addEventListener("hashchange", onPopOrHash);
 
     // Multi-turn progressive scans for React initial async rendering
     var scanDelays = [100, 250, 500, 1000, 1800, 3000, 5000];
     for (var k = 0; k < scanDelays.length; k++) {
-        setTimeout(function () {
-            translateWholePage();
-            ensureAppearancePanel();
-        }, scanDelays[k]);
+        setTimeout(onDomReady, scanDelays[k]);
     }
 
     // 5. High-Performance MutationObserver (observes childList on documentElement)
@@ -679,12 +717,27 @@
             }
         }, 80);
     }
-    window.addEventListener("click", scheduleInteractionScan, true);
-    window.addEventListener("contextmenu", scheduleInteractionScan, true);
-    window.addEventListener("mousedown", scheduleInteractionScan, true);
-    window.addEventListener("change", scheduleInteractionScan, true);
-    window.addEventListener("keyup", scheduleInteractionScan, true);
-    window.addEventListener("focusin", scheduleInteractionScan, true);
+    var INTERACTION_EVENTS = ["click", "contextmenu", "mousedown", "change", "keyup", "focusin"];
+    for (var evIdx = 0; evIdx < INTERACTION_EVENTS.length; evIdx++) {
+        window.addEventListener(INTERACTION_EVENTS[evIdx], scheduleInteractionScan, true);
+    }
 
-    console.log("[Antigravity i18n] Localization runner initialized (lang=" + currentLang + ").");
+    window.__antigravity_runner_cleanup = function () {
+        try { observer.disconnect(); } catch (e) {}
+        if (interactionTimer) clearTimeout(interactionTimer);
+        if (appearanceSyncTimer) clearTimeout(appearanceSyncTimer);
+        if (toastTimer) clearTimeout(toastTimer);
+        window.removeEventListener("storage", onStorage);
+        window.removeEventListener("keydown", onKeyDown, true);
+        window.removeEventListener("load", onDomReady);
+        window.removeEventListener("popstate", onPopOrHash);
+        window.removeEventListener("hashchange", onPopOrHash);
+        for (var i = 0; i < INTERACTION_EVENTS.length; i++) {
+            window.removeEventListener(INTERACTION_EVENTS[i], scheduleInteractionScan, true);
+        }
+        var oldPanel = document.getElementById(PANEL_ID);
+        if (oldPanel && oldPanel.parentNode) oldPanel.parentNode.removeChild(oldPanel);
+    };
+
+    console.log("[Antigravity i18n] Localization runner v" + RUNNER_VERSION + " initialized (lang=" + currentLang + ").");
 })();
