@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = "2026.11.26.7";
+    var RUNNER_VERSION = "2026.11.26.8";
 
     if (window.__antigravity_i18n_runner_active) {
         if (window.__antigravity_runner_version === RUNNER_VERSION) {
@@ -101,21 +101,68 @@
 
     var EXCLUDED_CLASS_MARKERS = [
         "monaco-editor",
+        "monaco-diff-editor",
         "view-lines",
         "xterm",
         "cm-editor",
+        "cm-content",
         "CodeMirror",
+        "code-block",
         "hljs",
         "shiki",
         "token",
-        "syntax"
+        "syntax",
+        "post-body",
+        "post-md",
+        "raw-pre",
+        "swarm-title"
     ];
+
+    var EXCLUDED_TESTID_EXACT = {
+        "planner-response-text": true,
+        "user-input-step": true
+    };
+
+    var EXCLUDED_TESTID_MARKERS = [
+        "diff",
+        "code-viewer",
+        "file-viewer",
+        "file-content",
+        "editor-content",
+        "terminal"
+    ];
+
+    function isInsideEditorOrOwnUi(node) {
+        var curr = node;
+        while (curr && curr !== document.body && curr !== document.documentElement) {
+            if (curr.nodeType === 1) {
+                if (curr.id === "__antigravity_i18n_toast__" || curr.id === "__antigravity_i18n_lang_panel__") return true;
+                var tag = curr.tagName;
+                if (tag === "TEXTAREA" || tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT") return true;
+                if (curr.isContentEditable) return true;
+                if (curr.getAttribute && curr.getAttribute("data-i18n-ignore") === "true") return true;
+                var cls = curr.className;
+                if (typeof cls === "string" && cls) {
+                    if (cls.indexOf("monaco-editor") !== -1 ||
+                        cls.indexOf("monaco-diff-editor") !== -1 ||
+                        cls.indexOf("xterm") !== -1 ||
+                        cls.indexOf("cm-editor") !== -1 ||
+                        cls.indexOf("CodeMirror") !== -1 ||
+                        cls.indexOf("__ag_thought_box__") !== -1) {
+                        return true;
+                    }
+                }
+            }
+            curr = curr.parentNode;
+        }
+        return false;
+    }
 
     function isInsideExcluded(node) {
         var curr = node;
         while (curr && curr !== document.body && curr !== document.documentElement) {
             if (curr.nodeType === 1) {
-                if (curr.id === "__antigravity_i18n_toast__") return true;
+                if (curr.id === "__antigravity_i18n_toast__" || curr.id === "ov-frame") return true;
                 var tag = curr.tagName;
                 if (EXCLUDED_TAGS[tag]) return true;
                 if (curr.isContentEditable) return true;
@@ -125,11 +172,21 @@
                         curr.getAttribute("data-no-translate") === "true" ||
                         curr.getAttribute("data-ag-localization-skip") === "true" ||
                         curr.getAttribute("data-agy-no-translate") === "true" ||
-                        curr.getAttribute("data-antigravity-zh-skip") === "1") {
+                        curr.getAttribute("data-antigravity-zh-skip") === "1" ||
+                        curr.hasAttribute("data-markdown-root") ||
+                        curr.hasAttribute("data-agy-powertools-root") ||
+                        curr.hasAttribute("data-agy-management-page")) {
                         return true;
                     }
                     var role = curr.getAttribute("role");
                     if (role === "textbox" || role === "code") return true;
+                    var tid = curr.getAttribute("data-testid");
+                    if (tid) {
+                        if (EXCLUDED_TESTID_EXACT[tid]) return true;
+                        for (var ti = 0; ti < EXCLUDED_TESTID_MARKERS.length; ti++) {
+                            if (tid.indexOf(EXCLUDED_TESTID_MARKERS[ti]) !== -1) return true;
+                        }
+                    }
                 }
                 var cls = curr.className;
                 if (typeof cls === "string" && cls) {
@@ -507,11 +564,12 @@
                 var p = JSON.parse(raw);
                 return {
                     codeFold: p.codeFold !== false,
-                    turnJump: p.turnJump !== false
+                    turnJump: p.turnJump !== false,
+                    compactLayout: Boolean(p.compactLayout)
                 };
             }
         } catch (e) {}
-        return { codeFold: true, turnJump: true };
+        return { codeFold: true, turnJump: true, compactLayout: false };
     }
     function saveWorkbenchCfg(cfg) {
         try {
@@ -519,6 +577,30 @@
         } catch (e) {}
     }
     var workbenchCfg = loadWorkbenchCfg();
+
+    var COMPACT_STYLE_ID = "__ag_compact_layout_style__";
+    function applyCompactLayout() {
+        try {
+            var existing = document.getElementById(COMPACT_STYLE_ID);
+            if (!workbenchCfg.compactLayout) {
+                if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+                return;
+            }
+            if (!existing) {
+                var host = document.head || document.documentElement;
+                if (!host) return;
+                existing = document.createElement("style");
+                existing.id = COMPACT_STYLE_ID;
+                existing.textContent =
+                    "[data-testid='planner-response-text'],[data-testid='user-input-step'],[data-markdown-root]{line-height:1.45 !important;}\n" +
+                    "[data-testid='planner-response-text'] p,[data-markdown-root] p{margin-top:0.35em !important;margin-bottom:0.35em !important;}\n" +
+                    "[data-testid='planner-response-text'] ul,[data-testid='planner-response-text'] ol,[data-markdown-root] ul,[data-markdown-root] ol{margin-top:0.25em !important;margin-bottom:0.25em !important;}\n" +
+                    "[data-testid='planner-response-text'] li,[data-markdown-root] li{margin-top:0.15em !important;margin-bottom:0.15em !important;}\n" +
+                    "[data-testid='planner-response-text'] pre,[data-markdown-root] pre{margin-top:0.4em !important;margin-bottom:0.4em !important;}";
+                host.appendChild(existing);
+            }
+        } catch (e) {}
+    }
 
     var thoughtCfg = {
         mode: "off",
@@ -897,7 +979,7 @@
             var pres = document.querySelectorAll("pre");
             for (var i = 0; i < pres.length; i++) {
                 var pre = pres[i];
-                if (isInsideExcluded(pre.parentNode)) continue;
+                if (isInsideEditorOrOwnUi(pre.parentNode)) continue;
                 var text = pre.textContent || "";
                 var lineCount = text.split("\n").length;
                 if (lineCount < 48) continue;
@@ -1045,6 +1127,7 @@
         }
         if (panel.__i18nFoldChk) panel.__i18nFoldChk.checked = Boolean(workbenchCfg.codeFold);
         if (panel.__i18nJumpChk) panel.__i18nJumpChk.checked = Boolean(workbenchCfg.turnJump);
+        if (panel.__i18nCompactChk) panel.__i18nCompactChk.checked = Boolean(workbenchCfg.compactLayout);
     }
 
     function makePillGroup() {
@@ -1302,8 +1385,21 @@
         jumpWrap.appendChild(jumpChk);
         jumpWrap.appendChild(document.createTextNode("Alt+↑/↓ 轮次快速跳转"));
 
+        var compactWrap = document.createElement("label");
+        compactWrap.style.cssText = "display:inline-flex;align-items:center;gap:6px;cursor:pointer;";
+        var compactChk = document.createElement("input");
+        compactChk.type = "checkbox";
+        compactChk.addEventListener("change", function () {
+            workbenchCfg.compactLayout = Boolean(compactChk.checked);
+            saveWorkbenchCfg(workbenchCfg);
+            applyCompactLayout();
+        });
+        compactWrap.appendChild(compactChk);
+        compactWrap.appendChild(document.createTextNode("紧凑排版 (收紧行高与间距)"));
+
         wbRow.appendChild(foldWrap);
         wbRow.appendChild(jumpWrap);
+        wbRow.appendChild(compactWrap);
         panel.appendChild(wbRow);
 
         panel.__i18nTitleEl = title;
@@ -1322,6 +1418,7 @@
         panel.__i18nAiStyle = aiStyle;
         panel.__i18nFoldChk = foldChk;
         panel.__i18nJumpChk = jumpChk;
+        panel.__i18nCompactChk = compactChk;
         updateAppearancePanelState(panel);
         return panel;
     }
@@ -1389,7 +1486,7 @@
     window.addEventListener("storage", onStorage);
 
     var onKeyDown = function (ev) {
-        if (!ev) return;
+        if (!ev || ev.isComposing || isComposing) return;
         if (ev.altKey && ev.shiftKey && !ev.ctrlKey && !ev.metaKey &&
             (ev.key === "L" || ev.key === "l" || ev.code === "KeyL")) {
             ev.preventDefault();
@@ -1417,6 +1514,7 @@
 
     window.__antigravity_ensureAppearancePanel = ensureAppearancePanel;
     initThoughtConfigFromBridge();
+    applyCompactLayout();
 
     if (currentLang !== "en") {
         translateWholePage();
@@ -1427,6 +1525,7 @@
 
     var onDomReady = function () {
         initThoughtConfigFromBridge();
+        applyCompactLayout();
         translateWholePage();
         ensureAppearancePanel();
         enhanceCodeBlocks();
@@ -1484,14 +1583,25 @@
     startObserving();
 
     // Debounced interaction re-scan for in-place React text updates (avoids characterData loop)
+    // Skip scans during IME composition to prevent Windows candidate window flicker.
+    var isComposing = false;
+    var onCompStart = function () { isComposing = true; };
+    var onCompEnd = function () {
+        isComposing = false;
+        scheduleInteractionScan();
+    };
+    window.addEventListener("compositionstart", onCompStart, true);
+    window.addEventListener("compositionend", onCompEnd, true);
+
     var interactionTimer = null;
-    function scheduleInteractionScan() {
+    function scheduleInteractionScan(ev) {
+        if (isComposing || (ev && ev.isComposing)) return;
         scheduleAppearancePanelSync();
         if (currentLang === "en") return;
         if (interactionTimer) clearTimeout(interactionTimer);
         interactionTimer = setTimeout(function () {
             interactionTimer = null;
-            if (!isTranslating && currentLang !== "en") {
+            if (!isTranslating && !isComposing && currentLang !== "en") {
                 translateWholePage();
             }
         }, 80);
@@ -1508,6 +1618,8 @@
         if (toastTimer) clearTimeout(toastTimer);
         window.removeEventListener("storage", onStorage);
         window.removeEventListener("keydown", onKeyDown, true);
+        window.removeEventListener("compositionstart", onCompStart, true);
+        window.removeEventListener("compositionend", onCompEnd, true);
         window.removeEventListener("load", onDomReady);
         window.removeEventListener("popstate", onPopOrHash);
         window.removeEventListener("hashchange", onPopOrHash);
@@ -1516,6 +1628,8 @@
         }
         var oldPanel = document.getElementById(PANEL_ID);
         if (oldPanel && oldPanel.parentNode) oldPanel.parentNode.removeChild(oldPanel);
+        var oldStyle = document.getElementById(COMPACT_STYLE_ID);
+        if (oldStyle && oldStyle.parentNode) oldStyle.parentNode.removeChild(oldStyle);
         clearAllThoughtBoxes();
     };
 

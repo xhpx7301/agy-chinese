@@ -131,11 +131,28 @@
     "Real-time AI model quota monitor panel for Antigravity 2.0.": "适用于 Antigravity 2.0 的实时 AI 模型配额监控面板。",
     "For most deep reasoning and complex problems": "适用于大多数深度推理和复杂问题",
     "Extra": "极高",
+    "Extra High": "极高",
+    "% left": "% 剩余",
+    "Permissions cannot be changed while the agent is running": "智能体运行时无法更改权限",
+    "Permissions cannot be changed while the agent is running.": "智能体运行时无法更改权限。",
+    "This Conversation": "当前会话",
+    "Only this conversation uses this preset.": "仅当前会话使用此预设。",
+    "Applies to /btw and messages sent after this turn": "适用于 /btw 及本轮之后发送的消息",
+    "Applies to messages sent after this turn": "适用于本轮之后发送的消息",
+    "Leaving Soon": "即将下线",
+    "For your hardest, long-horizon tasks": "适用于最艰巨的长周期复杂任务",
+    "Offloads routine steps to a faster executor. Same quality, fewer tokens used.": "将常规步骤分流至更快的执行器处理。质量不变，消耗更少 Token。",
+    "The Orchestrator's own planner": "Orchestrator 默认内置规划器",
     "Unavailable": "不可用",
     "Argon that may offload routine steps to Hydrogen. Same Argon-level quality, fewer tokens used.": "Argon 模型，可将常规步骤分流至 Hydrogen 处理。保持同等 Argon 级质量，同时消耗更少 Token。",
     "Neon that may offload routine steps to Hydrogen. Same Neon-level quality, fewer tokens used.": "Neon 模型，可将常规步骤分流至 Hydrogen 处理。保持同等 Neon 级质量，同时消耗更少 Token。",
+    "Carbon that may offload routine steps to Hydrogen. Same Carbon-level quality, fewer tokens used.": "Carbon 模型，可将常规步骤分流至 Hydrogen 处理。保持同等 Carbon 级质量，同时消耗更少 Token。",
     "Select Permission": "选择权限",
     "The original Gemini 4 model for advanced workflows": "适用于高级工作流的初代 Gemini 4 模型",
+    "The original Gemini 4 model for advanced workflows. Leaving on Nov 30.": "适用于高级工作流的初代 Gemini 4 模型。将于 11 月 30 日下线。",
+    "Use Hydrogen for better quality with lower quota usage": "建议使用 Hydrogen，以更低的配额消耗获得更佳质量",
+    "Use Hydrogen for better quality with lower quota usage.": "建议使用 Hydrogen，以更低的配额消耗获得更佳质量。",
+    "Use Hydrogen for better quality with lower quota usage. Leaving on Nov 30.": "建议使用 Hydrogen，以更低的配额消耗获得更佳质量。将于 11 月 30 日下线。",
     "For speed and efficiency in execution tasks": "适用于追求速度与效率的执行类任务",
     "GPT-OSS will be removed from Antigravity on November 30, 2026.": "GPT-OSS 将于 2026 年 11 月 30 日从 Antigravity 中移除。",
     "Gemini 4 Carbon is currently available to Ultra plan subscribers.": "Gemini 4 Carbon 目前仅向 Ultra 套餐订阅用户开放。",
@@ -213,7 +230,224 @@
     "project": "项目",
     "conversation": "会话",
     "folder": "文件夹",
-    "New": "新"
+    "New": "新",
+    "New chat": "新建聊天",
+    "Chats": "聊天",
+    "Archived conversations": "已归档会话",
+    "Search projects": "搜索项目",
+    "All projects": "全部项目",
+    "Send With Enter": "按 Enter 发送",
+    "Send with Enter": "按 Enter 发送",
+    "Keep Computer Awake": "保持电脑唤醒",
+    "Run in Background": "在后台运行",
+    "Privacy & Security": "隐私与安全",
+    "User Data Collection": "用户数据收集",
+    "Report Issue": "报告问题",
+    "Close sidebar": "关闭侧栏",
+    "Open sidebar": "打开侧栏",
+    "Show sidebar": "显示侧栏",
+    "Hide sidebar": "隐藏侧栏",
+    "Connection interrupted": "连接中断",
+    "Sending failed": "消息发送失败",
+    "Unable to fork": "无法创建分支",
+    "Conversation Forked": "会话已分支",
+    "View diff": "查看差异",
+    "Always allow": "始终允许",
+    "Allow once": "允许一次",
+    "Edit automation": "编辑自动化",
+    "New project": "新建项目",
+    "Open folder": "打开文件夹",
+    "Open in editor": "在编辑器中打开",
+    "Open in browser": "在浏览器中打开",
+    "Move to project": "移动到项目",
+    "Move to group": "移动到分组",
+    "New group": "新建分组",
+    "Show archived": "显示归档",
+    "Hide archived": "隐藏归档",
+    "Context window": "上下文窗口",
+    "System tools": "系统工具",
+    "System prompt": "系统提示",
+    "Free space": "剩余空间",
+    "Failed to fork conversation": "无法创建会话分支",
+    "Creating the forked conversation...": "正在创建分支会话…",
+    "Creating worktree for the forked conversation...": "正在为分支会话创建工作树…",
+    "Creating workspace for the forked conversation...": "正在为分支会话创建工作区…",
+    "Failed to create forked conversation: forking is not supported for conversations that have invoked subagents": "官方底层暂不支持对调用过子智能体（如浏览器子代理）的会话创建分支",
+    "forking is not supported for conversations that have invoked subagents": "官方底层暂不支持对调用过子智能体（如浏览器子代理）的会话创建分支",
+    "Failed to create forked conversation: forking is not supported for battle mode conversations: end the battle, then fork the source conversation": "对战模式进行中暂不支持创建分支，请先结束对战后再试",
+    "You are subscribed to the best Google AI plan.": "你已订阅 Google AI 的最高级套餐。",
+    "Promote to Conversation": "提升为正式会话",
+    "Promote to conversation": "提升为正式会话",
+    "Stop Side Question": "停止侧边对话",
+    "Stop side question": "停止侧边对话",
+    "Cannot promote while side question is running": "侧边对话运行中，暂无法提升为正式会话",
+    "Cannot promote a subagent's side question": "无法提升子智能体的侧边对话",
+    "Cannot promote during Battle Mode — end the battle first": "对战模式进行中无法提升，请先结束对战",
+    "The source conversation's subagents were not branched with it; they remain there.": "原会话的子智能体未随分支带入，仍保留在原会话中。",
+    "The source conversation's background tasks were not branched with it; they keep running there.": "原会话的后台任务未随分支带入，仍保留在原会话中运行。",
+    "Unmaximize": "还原窗口",
+    "Quit Antigravity": "退出 Antigravity",
+    "About Antigravity": "关于 Antigravity",
+    "Enter to send": "按 Enter 发送",
+    "Attach to chat": "引用到输入框",
+    "Failed to attach file": "引用到输入框失败",
+    "Save Image As...": "图片另存为…",
+    "Save Image As…": "图片另存为…",
+    "Image copied": "已复制图片",
+    "Image saved": "已保存图片",
+    "Failed to copy image": "复制图片失败",
+    "Failed to save image": "保存图片失败",
+    "Yes, allow for this conversation": "是，在本会话中允许",
+    "Command setup script": "命令前置脚本",
+    "Enable terminal sandbox": "启用终端沙盒",
+    "Terminal command auto execution": "终端命令自动执行",
+    "Enable sounds for agent": "启用智能体提示音",
+    "Enable notifications for agent": "启用智能体通知",
+    "Conversation steps": "会话详情",
+    "Custom context menus": "自定义右键菜单",
+    "Screen reader mode": "屏幕阅读器模式",
+    "Conversation width": "会话宽度",
+    "Terminal placement": "终端位置",
+    "Markdown artifact width": "Markdown 产物宽度",
+    "Context and quota indicator": "上下文与额度指示器",
+    "Open links in": "链接打开方式",
+    "Browser JavaScript execution policy": "浏览器 JavaScript 执行策略",
+    "Prevent sleep": "防止休眠",
+    "Keep in menu bar": "在菜单栏中保留",
+    "Delete all Remote Agents data": "删除全部远程智能体数据",
+    "Device name": "设备名称",
+    "File reads": "读取文件",
+    "File writes": "写入文件",
+    "Commands outside sandbox": "沙盒外命令",
+    "Enable sandbox mode": "启用沙盒模式",
+    "New conversation button": "新建会话按钮",
+    "Build With Google plugins": "Build With Google 插件",
+    "Manage hooks": "管理钩子",
+    "Access grants": "访问授权",
+    "Controls whether terminal commands require your approval before running.\n\nNote: A change to this setting will only apply to new messages sent to the agent. In-progress responses will use the previous setting value.": "控制终端命令在运行前是否需要你批准。\n\n注意：修改此设置仅对后续发送的新消息生效，正在进行中的回复仍沿用旧设置。",
+    "Skills & Rules": "技能与规则",
+    "Active Skills": "已启用技能",
+    "UI Plugins": "界面插件",
+    "UI plugins": "界面插件",
+    "Context Providers": "上下文提供程序",
+    "Enable Recommended Skills": "启用推荐技能",
+    "Enable recommended skills": "启用推荐技能",
+    "Open skill page": "打开技能页面",
+    "Skill download success": "技能下载成功",
+    "The skill is now available": "该技能现已可用",
+    "Failed to load marketplace bundles. Please try again.": "加载市场插件包失败，请重试。",
+    "This MCP server can no longer be configured.": "此 MCP 服务器已无法再配置。",
+    "Side Panel Preview": "侧栏预览",
+    "Workspace Settings": "工作区设置",
+    "Connecting to language server...": "正在连接语言服务…",
+    "Include Jetski default customizations": "包含默认内置自定义项",
+    "Cleared built-in browser data": "已清除内置浏览器数据",
+    "Cleared built-in browser history": "已清除内置浏览器历史记录",
+    "Ask a quick question without interrupting the main conversation.": "发起侧边对话，不打断主对话。",
+    "Run until the specified goal is completely finished.": "持续执行，直到指定目标完全达成。",
+    "Compact the conversation now (summarize history to free up the context window).": "立即压缩当前会话（总结历史内容以释放上下文窗口）。",
+    "Run an instruction on a recurring schedule or as a one-time timer.": "按周期计划或一次性定时执行指令。",
+    "Invoke a browser agent for web tasks.": "调用浏览器智能体处理网页任务。",
+    "Plan carefully before executing a task.": "执行任务前先制定详细计划。",
+    "Interview me to align on a plan.": "通过交互式问答对齐方案细节。",
+    "Invoke a team of agents to autonomously tackle large projects.": "调用多智能体协作团队自主完成大型项目。",
+    "Reflect on recent successes or corrections to capture reusable skills or rules.": "复盘近期的成功经验或修正，沉淀为可复用的技能或规则。",
+    "Invoke the Boost multi-agent orchestrator for complex tasks.": "调用 Boost 多智能体编排器处理复杂任务。",
+    "Looking for this conversation's swarm…": "正在查找当前会话的蜂群…",
+    "No swarm in this conversation": "当前会话暂无蜂群",
+    "Swarms started in this conversation appear here automatically, with their board, members and @mention graph. Start one with": "当前会话中启动的蜂群会自动显示在这里，包含讨论板、成员列表和 @ 提及关系图。输入",
+    "Open this pane from a conversation to see its swarm. Swarms started there appear here automatically; start one with": "请在具体会话中打开此面板以查看蜂群。该会话中启动的蜂群会自动显示在这里；输入",
+    "Watching for a swarm": "正在监听蜂群启动",
+    "Lost contact with the swarm sidecar; retrying": "与蜂群服务断开连接，正在重试",
+    "Untitled swarm": "未命名蜂群",
+    "Narrator’s page": "旁白页面",
+    "Narrator's page": "旁白页面",
+    "Plain view": "精简视图",
+    "Narrator view (AI-generated)": "旁白视图（AI 生成）",
+    "Want this view different? Tell the coordinator.": "想调整此视图？直接告诉协调者。",
+    "Open coordinator chat": "打开协调者会话",
+    "No narrator in this swarm. Ask the coordinator to add one.": "此蜂群暂无旁白员，可让协调者添加一个。",
+    "The narrator is updating the overview": "旁白员正在更新概览",
+    "The narrator is waiting for new board posts": "旁白员正在等待新动态",
+    "The narrator was killed; the overview no longer updates": "旁白员已终止，概览不再更新",
+    "Click a link in the view to open it.": "点击视图中的链接即可打开。",
+    "Opening files needs the app.": "打开文件需要在客户端中操作。",
+    "The coordinator asked. Answer it in its chat.": "协调者发起了询问，请在其会话中回复。",
+    "Swarm views": "蜂群视图",
+    "Nothing blocked": "无阻塞项",
+    "Nothing waiting": "无等待项",
+    "Nothing stuck": "无卡住项",
+    "Nothing needs you": "暂无需要你处理的事项",
+    "Nothing running": "暂无运行中任务",
+    "Nothing planned": "暂无后续计划",
+    "Latest action": "最新动作",
+    "Scrub through progress": "拖动查看进度",
+    "Filter by worker": "按成员筛选",
+    "Search members": "搜索成员",
+    "Search posts": "搜索动态",
+    "Filters (active)": "筛选（已启用）",
+    "From anyone": "来自任意成员",
+    "To anyone": "提及任意成员",
+    "To no one": "未提及成员",
+    "All channels": "全部频道",
+    "Posts in every channel": "所有频道的动态",
+    "Show posts by one member": "仅显示指定成员的动态",
+    "Show posts that call on one member": "仅显示提及指定成员的动态",
+    "Show posts in one channel": "仅显示指定频道的动态",
+    "Keep the newest post in view": "始终滚动到最新动态",
+    "No posts yet": "暂无动态",
+    "Not on the roster": "不在成员名单中",
+    "Hidden from the board; click to show": "已在讨论板隐藏，点击显示",
+    "Click to hide from the board": "点击在讨论板隐藏",
+    "Standing by": "待命中",
+    "Active: mid-turn (thinking, running a tool, or waiting on the model)": "活跃：正在执行轮次（思考、运行工具或等待模型响应）",
+    "Waiting: turn ended, asleep on the board until a post wakes it": "等待中：当前轮次已结束，休眠直至新动态唤醒",
+    "Killed: removed from the swarm": "已终止：已从蜂群移除",
+    "Jump to start": "跳到开头",
+    "Previous post (←)": "上一条动态 (←)",
+    "Next post (→)": "下一条动态 (→)",
+    "Play / pause replay (space)": "播放 / 暂停回放（空格）",
+    "Play replay": "播放回放",
+    "Pause replay": "暂停回放",
+    "Scrub through board posts": "拖动浏览讨论板动态",
+    "Show everything and follow live": "显示全部并实时跟随",
+    "Threads as cells, with each worker where it works": "以单元格展示各工作线及成员位置",
+    "Who @mentions whom": "成员间 @ 提及关系",
+    "Hide inactive": "隐藏非活跃",
+    "Hide killed and inactive members from the graph": "在关系图中隐藏已终止和非活跃成员",
+    "Expand @all": "展开 @all",
+    "Draw @all as an edge to every member": "将 @all 展开为指向所有成员的连线",
+    "Replay pacing": "回放节奏",
+    "Even pacing": "匀速回放",
+    "Real-time gaps": "按实际间隔",
+    "Replay speed": "回放速度",
+    "Export GIF": "导出 GIF",
+    "Export graph replay as an animated GIF": "将关系图回放导出为 GIF 动图",
+    "Nothing to export yet.": "暂无可导出的内容。",
+    "Could not export GIF.": "导出 GIF 失败。",
+    "Could not download GIF from embedded pane.": "无法在嵌入面板中下载 GIF。",
+    "@mention, width = count": "@提及，线条粗细表示次数",
+    "via @all": "通过 @all",
+    "posted with no mention": "未提及任何人的动态",
+    "@all posts, drawn by Expand @all": "@all 动态（勾选“展开 @all”时绘制）",
+    "Right-click image to save, or open in a new tab.": "右键图片保存，或在新标签页中打开。",
+    "Fit the whole swarm": "适配整个蜂巢",
+    "Where each worker is, by thread": "按工作线查看各成员位置",
+    "Tasks done": "已完成任务",
+    "Message just sent": "刚发送消息",
+    "Waiting on": "等待对象",
+    "Waiting on @coordinator": "等待 @coordinator",
+    "seen just now": "刚刚活跃",
+    "no tasks": "暂无任务",
+    "tasks done": "项任务已完成",
+    "To @all": "提及 @all",
+    "Filter by poster": "按发送者筛选",
+    "Filter by recipient": "按提及对象筛选",
+    "Filter by channel": "按频道筛选",
+    "Show or hide each member's posts": "显示或隐藏各成员动态",
+    "Replay position": "回放进度",
+    "Graph view": "关系图视图",
+    "Close preview": "关闭预览"
   },
   "reverse_map": {
     "继承全局": "Inherit Global",
@@ -334,12 +568,100 @@
       "replacement": "选择模型，当前: $1"
     },
     {
+      "pattern": "^Worked for ([0-9a-zA-Z\\s<>]+?)\\s*[·•]\\s*(\\d+)\\s+updates?$",
+      "replacement": "耗时 $1 · $2 条进度"
+    },
+    {
+      "pattern": "^(?:[·•]\\s*)?(\\d+)\\s+updates?$",
+      "replacement": "$1 条进度"
+    },
+    {
       "pattern": "^Worked for (.*)$",
       "replacement": "耗时 $1"
     },
     {
+      "pattern": "^Thought for (\\d+)s$",
+      "replacement": "思考了 $1 秒"
+    },
+    {
       "pattern": "^Thought for (.*)$",
       "replacement": "思考用时 $1"
+    },
+    {
+      "pattern": "^Step (\\d+) of (\\d+)$",
+      "replacement": "第 $1 / $2 步"
+    },
+    {
+      "pattern": "^Shared with:\\s*(.+)$",
+      "replacement": "共享额度模型：$1"
+    },
+    {
+      "pattern": "^Available AI Credits:\\s*(.+)$",
+      "replacement": "可用 AI 积分：$1"
+    },
+    {
+      "pattern": "^Yes, allow downloads from (.+) for this run$",
+      "replacement": "是，本次允许从 $1 下载"
+    },
+    {
+      "pattern": "^Yes, allow downloads from (.+) in this conversation$",
+      "replacement": "是，在本会话中允许从 $1 下载"
+    },
+    {
+      "pattern": "^Yes, always allow downloads from (.+)$",
+      "replacement": "是，始终允许从 $1 下载"
+    },
+    {
+      "pattern": "^Yes, and always allow '(.+)' in this conversation$",
+      "replacement": "是，并在本会话中始终允许 '$1'"
+    },
+    {
+      "pattern": "^Yes, and always allow '(.+)'$",
+      "replacement": "是，并始终允许 '$1'"
+    },
+    {
+      "pattern": "^Yes, save rule for '(.+)' in this conversation$",
+      "replacement": "是，在本会话中为 '$1' 保存规则"
+    },
+    {
+      "pattern": "^Yes, save rule for '(.+)' globally$",
+      "replacement": "是，全局为 '$1' 保存规则"
+    },
+    {
+      "pattern": "^(\\d+)\\s+posts?$",
+      "replacement": "$1 条动态"
+    },
+    {
+      "pattern": "^(\\d+)\\s+members?$",
+      "replacement": "$1 名成员"
+    },
+    {
+      "pattern": "^(\\d+)\\s+frames?$",
+      "replacement": "$1 帧"
+    },
+    {
+      "pattern": "^(\\d+) of (\\d+) tasks done$",
+      "replacement": "已完成 $1 / $2 项任务"
+    },
+    {
+      "pattern": "^Waiting on @(.+)$",
+      "replacement": "等待 @$1"
+    },
+    {
+      "pattern": "^Working for @(.+)$",
+      "replacement": "正为 @$1 处理"
+    },
+    {
+      "pattern": "^@([^\\s]+) ran out of quota$",
+      "replacement": "@$1 额度已耗尽"
+    },
+    {
+      "pattern": "^@([^\\s]+) looks stuck$",
+      "replacement": "@$1 疑似卡住"
+    },
+    {
+      "pattern": "^@([^\\s]+) hit an error$",
+      "replacement": "@$1 发生错误"
     },
     {
       "pattern": "^Exploring (\\d+) files?, (\\d+) folders?$",
@@ -398,12 +720,108 @@
       "replacement": "$1 模型，可将常规步骤分流至 $2 处理。保持同等 $3 级质量，同时消耗更少 Token。"
     },
     {
+      "pattern": "^The original Gemini 4 model for advanced workflows\\.\\s*Leaving on\\s+(.+?)\\.?$",
+      "replacement": "适用于高级工作流的初代 Gemini 4 模型。将于 $1 下线。"
+    },
+    {
+      "pattern": "^Use Hydrogen for better quality with lower quota usage\\.\\s*Leaving on\\s+(.+?)\\.?$",
+      "replacement": "建议使用 Hydrogen，以更低的配额消耗获得更佳质量。将于 $1 下线。"
+    },
+    {
+      "pattern": "^(.+?)\\.\\s*Leaving on\\s+([A-Z][a-z]+\\s+\\d+(?:,\\s*\\d{4})?)\\.?$",
+      "replacement": "$1。将于 $2 下线。"
+    },
+    {
+      "pattern": "^((?:Gemini|Claude)\\s+.+?)\\s+Extra High$",
+      "replacement": "$1 极高"
+    },
+    {
+      "pattern": "^((?:Gemini|Claude)\\s+.+?)\\s+Extra$",
+      "replacement": "$1 极高"
+    },
+    {
+      "pattern": "^((?:Gemini|Claude)\\s+.+?)\\s+High$",
+      "replacement": "$1 高"
+    },
+    {
+      "pattern": "^((?:Gemini|Claude)\\s+.+?)\\s+Medium$",
+      "replacement": "$1 中"
+    },
+    {
+      "pattern": "^((?:Gemini|Claude)\\s+.+?)\\s+Low$",
+      "replacement": "$1 低"
+    },
+    {
+      "pattern": "^((?:Gemini|Claude)\\s+.+?)\\s+Max$",
+      "replacement": "$1 最高"
+    },
+    {
+      "pattern": "^(\\d+(?:\\.\\d+)?)%\\s*left$",
+      "replacement": "$1% 剩余"
+    },
+    {
+      "pattern": "^This (.+?) overrides your global permission settings\\.$",
+      "replacement": "此$1覆盖了您的全局权限设置。"
+    },
+    {
+      "pattern": "^Agent permissions preset selector, current: (.*)$",
+      "replacement": "智能体权限预设选择器，当前: $1"
+    },
+    {
+      "pattern": "^Agent permissions preset: (.*?), (.*)$",
+      "replacement": "智能体权限预设: $1，$2"
+    },
+    {
+      "pattern": "^(\\d+)s limit$",
+      "replacement": "$1 秒限额"
+    },
+    {
+      "pattern": "^(\\d+)m limit$",
+      "replacement": "$1 分钟限额"
+    },
+    {
+      "pattern": "^(\\d+)h limit$",
+      "replacement": "$1 小时限额"
+    },
+    {
+      "pattern": "^(\\d+)d limit$",
+      "replacement": "$1 天限额"
+    },
+    {
+      "pattern": "^Resets in (\\d+)d (\\d+)h$",
+      "replacement": "$1 天 $2 小时后重置"
+    },
+    {
+      "pattern": "^Resets in (\\d+)d$",
+      "replacement": "$1 天后重置"
+    },
+    {
+      "pattern": "^Resets in (\\d+)h (\\d+)m$",
+      "replacement": "$1 小时 $2 分钟后重置"
+    },
+    {
+      "pattern": "^Resets in (\\d+)h$",
+      "replacement": "$1 小时后重置"
+    },
+    {
+      "pattern": "^Resets in (\\d+)m$",
+      "replacement": "$1 分钟后重置"
+    },
+    {
       "pattern": "^(.+?) will be removed from Antigravity on (.+?)\\.$",
       "replacement": "$1 将于 $2 从 Antigravity 中移除。"
     },
     {
       "pattern": "^(.+?) is currently available to (.+?) plan subscribers\\.$",
       "replacement": "$1 目前仅向 $2 套餐订阅用户开放。"
+    },
+    {
+      "pattern": "^Hey\\s+(.+?),\\s*what should we build today\\?$",
+      "replacement": "嗨 $1，今天我们要构建什么？"
+    },
+    {
+      "pattern": "^Good to see you,\\s*(.+?)\\.\\s*What's next\\?$",
+      "replacement": "很高兴见到您，$1。接下来做什么？"
     },
     {
       "pattern": "^Welcome back,\\s*(.+?)\\.\\s*Where should we pick up\\?$",

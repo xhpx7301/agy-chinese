@@ -364,8 +364,58 @@ class CdpClient {
     }
 }
 
+function loadUserCustomI18n() {
+    const candidates = [];
+    for (const dir of getCandidateUserDataDirs()) {
+        candidates.push(path.join(dir, "i18n_cache", "custom_i18n.json"));
+        candidates.push(path.join(dir, "i18n_cache", "custom-i18n.json"));
+    }
+    candidates.push(path.join(__dirname, "custom_i18n.json"));
+
+    const merged = {};
+    let count = 0;
+    for (const filePath of candidates) {
+        try {
+            if (!fs.existsSync(filePath)) continue;
+            const st = fs.statSync(filePath);
+            if (!st.isFile() || st.size <= 0 || st.size > 512 * 1024) continue;
+            const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+            if (Array.isArray(parsed)) {
+                for (const item of parsed) {
+                    if (count >= 2000) break;
+                    if (Array.isArray(item) && typeof item[0] === "string" && typeof item[1] === "string") {
+                        const k = item[0].trim();
+                        const v = item[1].trim();
+                        if (k && v && k.length <= 400 && v.length <= 400) {
+                            merged[k] = v;
+                            count++;
+                        }
+                    }
+                }
+            } else if (parsed && typeof parsed === "object") {
+                const entries = parsed.exact && typeof parsed.exact === "object" ? parsed.exact : parsed;
+                for (const [rawK, rawV] of Object.entries(entries)) {
+                    if (count >= 2000) break;
+                    if (typeof rawV !== "string") continue;
+                    const k = rawK.trim();
+                    const v = rawV.trim();
+                    if (k && v && k.length <= 400 && v.length <= 400) {
+                        merged[k] = v;
+                        count++;
+                    }
+                }
+            }
+        } catch (_e) {}
+    }
+    return merged;
+}
+
 function buildPayloadScript() {
     const dataObj = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8"));
+    const customMap = loadUserCustomI18n();
+    if (customMap && Object.keys(customMap).length > 0) {
+        dataObj.exact = Object.assign({}, dataObj.exact || {}, customMap);
+    }
     const runnerCode = fs.readFileSync(RUNNER_PATH, "utf-8");
     return (
         "(function(){try{window.__ANTIGRAVITY_I18N_DATA__=" +
@@ -379,6 +429,7 @@ function buildPayloadScript() {
 function isInjectableTarget(t) {
     if (!t || !t.webSocketDebuggerUrl) return false;
     if (t.url && t.url.startsWith("devtools://")) return false;
+    if (t.type === "iframe" && /^plugin:\/\/swarm--swarm_board-/i.test(t.url || "")) return true;
     return t.type === "page" || t.type === "webview" || t.type === "app";
 }
 
@@ -406,13 +457,35 @@ async function probeUntranslated(target) {
         var out = [];
         var seen = Object.create(null);
         var excludedTags = { SCRIPT:1, STYLE:1, NOSCRIPT:1, PRE:1, CODE:1, TEXTAREA:1, KBD:1, SAMP:1 };
-        var excludedCls = ["monaco-editor", "view-lines", "xterm", "cm-editor", "CodeMirror", "hljs", "shiki", "token", "syntax"];
+        var excludedCls = ["monaco-editor", "monaco-diff-editor", "view-lines", "xterm", "cm-editor", "cm-content", "CodeMirror", "code-block", "hljs", "shiki", "token", "syntax", "post-body", "post-md", "raw-pre", "swarm-title"];
+        var excludedTestIds = { "planner-response-text":1, "user-input-step":1 };
+        var excludedTestIdMarkers = ["diff", "code-viewer", "file-viewer", "file-content", "editor-content", "terminal"];
         function ignored(node) {
             var c = node;
             while (c && c !== document.body && c !== document.documentElement) {
                 if (c.nodeType === 1) {
+                    if (c.id === "__antigravity_i18n_toast__" || c.id === "ov-frame") return true;
                     if (excludedTags[c.tagName] || c.isContentEditable) return true;
-                    if (c.getAttribute && (c.getAttribute("data-i18n-ignore") === "true" || c.getAttribute("role") === "textbox")) return true;
+                    if (c.getAttribute) {
+                        if (c.getAttribute("data-i18n-ignore") === "true" ||
+                            c.getAttribute("translate") === "no" ||
+                            c.getAttribute("data-no-translate") === "true" ||
+                            c.getAttribute("data-ag-localization-skip") === "true" ||
+                            c.getAttribute("data-agy-no-translate") === "true" ||
+                            c.getAttribute("data-antigravity-zh-skip") === "1" ||
+                            c.hasAttribute("data-markdown-root") ||
+                            c.hasAttribute("data-agy-powertools-root") ||
+                            c.hasAttribute("data-agy-management-page")) return true;
+                        var role = c.getAttribute("role");
+                        if (role === "textbox" || role === "code") return true;
+                        var tid = c.getAttribute("data-testid");
+                        if (tid) {
+                            if (excludedTestIds[tid]) return true;
+                            for (var ti = 0; ti < excludedTestIdMarkers.length; ti++) {
+                                if (tid.indexOf(excludedTestIdMarkers[ti]) !== -1) return true;
+                            }
+                        }
+                    }
                     var cls = c.className;
                     if (typeof cls === "string" && cls) {
                         for (var i = 0; i < excludedCls.length; i++) {

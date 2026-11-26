@@ -147,6 +147,28 @@ def get_shortcut_backup_path():
     return ""
 
 
+def find_pythonw_exe():
+    candidates = []
+    if sys.executable:
+        candidates.append(os.path.join(os.path.dirname(sys.executable), "pythonw.exe"))
+    which_pyw = shutil.which("pythonw")
+    if which_pyw:
+        candidates.append(which_pyw)
+    local_app = os.environ.get("LOCALAPPDATA", "")
+    if local_app:
+        py_root = os.path.join(local_app, "Programs", "Python")
+        if os.path.isdir(py_root):
+            try:
+                for entry in sorted(os.listdir(py_root), reverse=True):
+                    candidates.append(os.path.join(py_root, entry, "pythonw.exe"))
+            except Exception:
+                pass
+    for cand in candidates:
+        if cand and os.path.isfile(cand):
+            return cand
+    return ""
+
+
 def install_shortcuts(resources_dir):
     if sys.platform != "win32":
         print("[!] 自动快捷方式配置仅支持 Windows。")
@@ -158,18 +180,28 @@ def install_shortcuts(resources_dir):
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(script_dir)
+    deploy_script = os.path.abspath(__file__)
+    pythonw_exe = find_pythonw_exe()
     vbs_path = os.path.join(script_dir, "silent_launch.vbs")
-    if not os.path.exists(vbs_path):
-        print(f"[错误] 缺少静默启动脚本: {vbs_path}")
-        sys.exit(1)
 
-    wscript_exe = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "wscript.exe")
+    if pythonw_exe:
+        target_launcher = pythonw_exe
+        target_args = f'"{deploy_script}" --check-and-launch --silent'
+        launcher_mode = f"pythonw.exe 无窗直启（免 VBS 防杀软误报）"
+    else:
+        if not os.path.exists(vbs_path):
+            print(f"[错误] 未找到 pythonw.exe 且缺少静默启动脚本: {vbs_path}")
+            sys.exit(1)
+        target_launcher = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "wscript.exe")
+        target_args = f'"{vbs_path}"'
+        launcher_mode = "wscript.exe + silent_launch.vbs（回退模式）"
+
     backup_path = get_shortcut_backup_path()
     ps_script = r"""
 $ErrorActionPreference = 'Stop'
 $exePath = $env:AGY_EXE_PATH
-$wscriptExe = $env:AGY_WSCRIPT_EXE
-$vbsPath = $env:AGY_VBS_PATH
+$targetLauncher = $env:AGY_TARGET_LAUNCHER
+$targetArgs = $env:AGY_TARGET_ARGS
 $repoRoot = $env:AGY_REPO_ROOT
 $backupPath = $env:AGY_BACKUP_PATH
 
@@ -204,7 +236,7 @@ foreach ($d in $dirs) {
       $sc = $shell.CreateShortcut($lnkPath)
       $leaf = if ($sc.TargetPath) { Split-Path -Leaf $sc.TargetPath } else { '' }
       $isOrig = ($leaf -ieq 'Antigravity.exe')
-      $isOurs = ($leaf -ieq 'wscript.exe' -and $sc.Arguments -like "*silent_launch.vbs*")
+      $isOurs = (($leaf -ieq 'wscript.exe' -and $sc.Arguments -like "*silent_launch.vbs*") -or ($leaf -ieq 'pythonw.exe' -and $sc.Arguments -like "*deploy_chinese.py*"))
       if ($isOrig -or $isOurs) {
         $found++
         if ($isOrig -and -not $existing.ContainsKey($lnkPath)) {
@@ -215,8 +247,8 @@ foreach ($d in $dirs) {
             IconLocation = [string]$sc.IconLocation
           }
         }
-        $sc.TargetPath = $wscriptExe
-        $sc.Arguments = "`"$vbsPath`""
+        $sc.TargetPath = $targetLauncher
+        $sc.Arguments = $targetArgs
         $sc.WorkingDirectory = $repoRoot
         $sc.IconLocation = "$exePath,0"
         $sc.Save()
@@ -229,8 +261,8 @@ foreach ($d in $dirs) {
 if ($found -eq 0) {
   $desktopLnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Antigravity.lnk'
   $sc = $shell.CreateShortcut($desktopLnk)
-  $sc.TargetPath = $wscriptExe
-  $sc.Arguments = "`"$vbsPath`""
+  $sc.TargetPath = $targetLauncher
+  $sc.Arguments = $targetArgs
   $sc.WorkingDirectory = $repoRoot
   $sc.IconLocation = "$exePath,0"
   $sc.Save()
@@ -246,8 +278,8 @@ Write-Output "$found,$updated"
 """
     env = os.environ.copy()
     env["AGY_EXE_PATH"] = exe_path
-    env["AGY_WSCRIPT_EXE"] = wscript_exe
-    env["AGY_VBS_PATH"] = vbs_path
+    env["AGY_TARGET_LAUNCHER"] = target_launcher
+    env["AGY_TARGET_ARGS"] = target_args
     env["AGY_REPO_ROOT"] = repo_root
     env["AGY_BACKUP_PATH"] = backup_path
 
@@ -260,7 +292,7 @@ Write-Output "$found,$updated"
     )
     line = res.stdout.strip().splitlines()[-1] if res.stdout.strip() else "0,0"
     found, updated = line.split(",")
-    print(f"[✓] 防失效快捷方式配置完成：匹配原有快捷方式 {found} 个，已更新/创建 {updated} 个。")
+    print(f"[✓] 防失效快捷方式配置完成（{launcher_mode}）：匹配原有快捷方式 {found} 个，已更新/创建 {updated} 个。")
     print("    现在通过桌面/开始菜单打开 Antigravity 时，会自动静默检查并修复汉化！")
 
 
@@ -542,7 +574,7 @@ def main():
         if (os.path.exists(utils_js_check)):
             with open(utils_js_check, "r", encoding="utf-8", errors="ignore") as f:
                 u_tmp = f.read()
-            if "injectAntigravityI18n" in u_tmp and ("syncI18nFromGithub" not in u_tmp or "remoteManifest.antigravity_version !== localVer" in u_tmp):
+            if "injectAntigravityI18n" in u_tmp and ("syncI18nFromGithub" not in u_tmp or "remoteManifest.antigravity_version !== localVer" in u_tmp or "loadCustomI18nMap" not in u_tmp):
                 need_utils_restore = True
 
         if os.path.exists(backup_asar) and need_utils_restore:
@@ -585,6 +617,39 @@ def main():
                 "    const bundled = path_1.default.join(__dirname, fileName);\n"
                 "    return fs.existsSync(bundled) ? fs.readFileSync(bundled, 'utf-8') : null;\n"
                 "};\n"
+                "const loadCustomI18nMap = () => {\n"
+                "    const out = {};\n"
+                "    const cacheDir = getI18nCacheDir();\n"
+                "    if (!cacheDir) return out;\n"
+                "    for (const name of ['custom_i18n.json', 'custom-i18n.json']) {\n"
+                "        try {\n"
+                "            const fp = path_1.default.join(cacheDir, name);\n"
+                "            if (!fs.existsSync(fp)) continue;\n"
+                "            const st = fs.statSync(fp);\n"
+                "            if (!st.isFile() || st.size <= 0 || st.size > 512 * 1024) continue;\n"
+                "            const parsed = JSON.parse(fs.readFileSync(fp, 'utf-8'));\n"
+                "            let count = 0;\n"
+                "            if (Array.isArray(parsed)) {\n"
+                "                for (const item of parsed) {\n"
+                "                    if (count >= 2000) break;\n"
+                "                    if (Array.isArray(item) && typeof item[0] === 'string' && typeof item[1] === 'string') {\n"
+                "                        const k = item[0].trim(), v = item[1].trim();\n"
+                "                        if (k && v && k.length <= 400 && v.length <= 400) { out[k] = v; count++; }\n"
+                "                    }\n"
+                "                }\n"
+                "            } else if (parsed && typeof parsed === 'object') {\n"
+                "                const src = parsed.exact && typeof parsed.exact === 'object' ? parsed.exact : parsed;\n"
+                "                for (const [rawK, rawV] of Object.entries(src)) {\n"
+                "                    if (count >= 2000) break;\n"
+                "                    if (typeof rawV !== 'string') continue;\n"
+                "                    const k = rawK.trim(), v = rawV.trim();\n"
+                "                    if (k && v && k.length <= 400 && v.length <= 400) { out[k] = v; count++; }\n"
+                "                }\n"
+                "            }\n"
+                "        } catch (_e) {}\n"
+                "    }\n"
+                "    return out;\n"
+                "};\n"
                 "const injectAntigravityI18n = (target) => {\n"
                 "    try {\n"
                 "        const wc = target && target.webContents ? target.webContents : target;\n"
@@ -592,7 +657,12 @@ def main():
                 "        const dataStr = readI18nAsset('i18n_data.json');\n"
                 "        const runnerCode = readI18nAsset('i18n_runner.js');\n"
                 "        if (dataStr && runnerCode) {\n"
-                "            const script = '(function(){try{window.__ANTIGRAVITY_I18N_DATA__=' + JSON.stringify(JSON.parse(dataStr)) + ';' + runnerCode + '}catch(e){console.error(\"[Antigravity i18n] Error:\",e);}})();';\n"
+                "            const dataObj = JSON.parse(dataStr);\n"
+                "            const customMap = loadCustomI18nMap();\n"
+                "            if (customMap && Object.keys(customMap).length > 0) {\n"
+                "                dataObj.exact = Object.assign({}, dataObj.exact || {}, customMap);\n"
+                "            }\n"
+                "            const script = '(function(){try{window.__ANTIGRAVITY_I18N_DATA__=' + JSON.stringify(dataObj) + ';' + runnerCode + '}catch(e){console.error(\"[Antigravity i18n] Error:\",e);}})();';\n"
                 "            wc.executeJavaScript(script).catch(() => {});\n"
                 "        }\n"
                 "    } catch (e) {\n"
