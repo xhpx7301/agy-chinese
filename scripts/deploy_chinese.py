@@ -19,6 +19,7 @@ Features:
 
 import argparse
 import os
+import re
 import sys
 import shutil
 import tempfile
@@ -93,27 +94,216 @@ def launch_antigravity(resources_dir):
     if sys.platform == "win32":
         exe_path = os.path.join(os.path.dirname(resources_dir), "Antigravity.exe")
         if os.path.exists(exe_path):
-            import ctypes
-            ret = ctypes.windll.shell32.ShellExecuteW(
-                None,
-                "open",
-                exe_path,
-                "--remote-debugging-port=0",
-                os.path.dirname(exe_path),
-                1,
-            )
-            if ret > 32:
-                print(f"[✓] 已启动 Antigravity (已启用 CDP 端口): {exe_path}")
+            # 以完全脱离控制台的方式启动：Electron 会附着到父进程控制台并打印
+            # 日志（DevTools/AutoUpdater/libpng 等），且会让批处理窗口无法自动关闭。
+            DETACHED_PROCESS = 0x00000008
+            CREATE_NEW_PROCESS_GROUP = 0x00000200
+            CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+            try:
+                subprocess.Popen(
+                    [exe_path, "--remote-debugging-port=0", "--disable-logging", "--log-level=3"],
+                    cwd=os.path.dirname(exe_path),
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    close_fds=True,
+                    creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_BREAKAWAY_FROM_JOB,
+                )
+                print(f"[✓] 已启动 Antigravity (后台独立运行): {exe_path}")
                 return True
-            os.startfile(exe_path)
-            print(f"[✓] 已启动 Antigravity: {exe_path}")
-            return True
+            except Exception:
+                try:
+                    subprocess.Popen(
+                        [exe_path, "--remote-debugging-port=0"],
+                        cwd=os.path.dirname(exe_path),
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        close_fds=True,
+                        creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+                    )
+                    print(f"[✓] 已启动 Antigravity: {exe_path}")
+                    return True
+                except Exception:
+                    os.startfile(exe_path)
+                    print(f"[✓] 已启动 Antigravity: {exe_path}")
+                    return True
     elif sys.platform == "darwin":
         subprocess.Popen(["open", "-a", "Antigravity"])
         print("[✓] 已启动 Antigravity。")
         return True
     print("[!] 未找到 Antigravity 可执行文件，请手动打开。")
     return False
+
+
+def get_shortcut_backup_path():
+    appdata = os.environ.get("APPDATA", "")
+    if appdata:
+        return os.path.join(appdata, "Antigravity", "agy_chinese_shortcut_backup.json")
+    return ""
+
+
+def install_shortcuts(resources_dir):
+    if sys.platform != "win32":
+        print("[!] 自动快捷方式配置仅支持 Windows。")
+        return
+    exe_path = os.path.join(os.path.dirname(resources_dir), "Antigravity.exe")
+    if not os.path.exists(exe_path):
+        print(f"[错误] 未找到 Antigravity.exe: {exe_path}")
+        sys.exit(1)
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(script_dir)
+    vbs_path = os.path.join(script_dir, "silent_launch.vbs")
+    if not os.path.exists(vbs_path):
+        print(f"[错误] 缺少静默启动脚本: {vbs_path}")
+        sys.exit(1)
+
+    wscript_exe = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "wscript.exe")
+    backup_path = get_shortcut_backup_path()
+    ps_script = r"""
+$ErrorActionPreference = 'Stop'
+$exePath = $env:AGY_EXE_PATH
+$wscriptExe = $env:AGY_WSCRIPT_EXE
+$vbsPath = $env:AGY_VBS_PATH
+$repoRoot = $env:AGY_REPO_ROOT
+$backupPath = $env:AGY_BACKUP_PATH
+
+$dirs = @(
+  [Environment]::GetFolderPath('Desktop'),
+  [Environment]::GetFolderPath('CommonDesktopDirectory'),
+  [Environment]::GetFolderPath('StartMenu'),
+  [Environment]::GetFolderPath('CommonStartMenu'),
+  (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar')
+) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+
+$existing = @{}
+if ($backupPath -and (Test-Path -LiteralPath $backupPath)) {
+  try {
+    $raw = Get-Content -LiteralPath $backupPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($raw) {
+      foreach ($p in $raw.PSObject.Properties) {
+        $existing[$p.Name] = $p.Value
+      }
+    }
+  } catch {}
+}
+
+$shell = New-Object -ComObject WScript.Shell
+$updated = 0
+$found = 0
+
+foreach ($d in $dirs) {
+  Get-ChildItem -LiteralPath $d -Recurse -Filter *.lnk -ErrorAction SilentlyContinue | ForEach-Object {
+    $lnkPath = $_.FullName
+    try {
+      $sc = $shell.CreateShortcut($lnkPath)
+      $leaf = if ($sc.TargetPath) { Split-Path -Leaf $sc.TargetPath } else { '' }
+      $isOrig = ($leaf -ieq 'Antigravity.exe')
+      $isOurs = ($leaf -ieq 'wscript.exe' -and $sc.Arguments -like "*silent_launch.vbs*")
+      if ($isOrig -or $isOurs) {
+        $found++
+        if ($isOrig -and -not $existing.ContainsKey($lnkPath)) {
+          $existing[$lnkPath] = @{
+            TargetPath = [string]$sc.TargetPath
+            Arguments = [string]$sc.Arguments
+            WorkingDirectory = [string]$sc.WorkingDirectory
+            IconLocation = [string]$sc.IconLocation
+          }
+        }
+        $sc.TargetPath = $wscriptExe
+        $sc.Arguments = "`"$vbsPath`""
+        $sc.WorkingDirectory = $repoRoot
+        $sc.IconLocation = "$exePath,0"
+        $sc.Save()
+        $updated++
+      }
+    } catch {}
+  }
+}
+
+if ($found -eq 0) {
+  $desktopLnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Antigravity.lnk'
+  $sc = $shell.CreateShortcut($desktopLnk)
+  $sc.TargetPath = $wscriptExe
+  $sc.Arguments = "`"$vbsPath`""
+  $sc.WorkingDirectory = $repoRoot
+  $sc.IconLocation = "$exePath,0"
+  $sc.Save()
+  $updated = 1
+}
+
+if ($backupPath) {
+  $parent = Split-Path -Parent $backupPath
+  if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+  $existing | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $backupPath -Encoding UTF8
+}
+Write-Output "$found,$updated"
+"""
+    env = os.environ.copy()
+    env["AGY_EXE_PATH"] = exe_path
+    env["AGY_WSCRIPT_EXE"] = wscript_exe
+    env["AGY_VBS_PATH"] = vbs_path
+    env["AGY_REPO_ROOT"] = repo_root
+    env["AGY_BACKUP_PATH"] = backup_path
+
+    res = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    line = res.stdout.strip().splitlines()[-1] if res.stdout.strip() else "0,0"
+    found, updated = line.split(",")
+    print(f"[✓] 防失效快捷方式配置完成：匹配原有快捷方式 {found} 个，已更新/创建 {updated} 个。")
+    print("    现在通过桌面/开始菜单打开 Antigravity 时，会自动静默检查并修复汉化！")
+
+
+def restore_shortcuts(silent=False):
+    if sys.platform != "win32":
+        return
+    backup_path = get_shortcut_backup_path()
+    if not backup_path or not os.path.exists(backup_path):
+        if not silent:
+            print("[*] 未找到快捷方式备份记录，无需还原快捷方式。")
+        return
+
+    ps_script = r"""
+$ErrorActionPreference = 'SilentlyContinue'
+$backupPath = $env:AGY_BACKUP_PATH
+$raw = Get-Content -LiteralPath $backupPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$shell = New-Object -ComObject WScript.Shell
+$restored = 0
+if ($raw) {
+  foreach ($p in $raw.PSObject.Properties) {
+    $lnkPath = $p.Name
+    $info = $p.Value
+    if ((Test-Path -LiteralPath $lnkPath) -and $info.TargetPath) {
+      $sc = $shell.CreateShortcut($lnkPath)
+      $sc.TargetPath = [string]$info.TargetPath
+      $sc.Arguments = [string]$info.Arguments
+      $sc.WorkingDirectory = [string]$info.WorkingDirectory
+      if ($info.IconLocation) { $sc.IconLocation = [string]$info.IconLocation }
+      $sc.Save()
+      $restored++
+    }
+  }
+}
+Remove-Item -LiteralPath $backupPath -Force -ErrorAction SilentlyContinue
+Write-Output "$restored"
+"""
+    env = os.environ.copy()
+    env["AGY_BACKUP_PATH"] = backup_path
+    res = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if res.returncode == 0:
+        cnt = res.stdout.strip().splitlines()[-1] if res.stdout.strip() else "0"
+        print(f"[✓] 已还原 {cnt} 个桌面/开始菜单快捷方式为官方原版。")
 
 
 def restore_original(resources_dir):
@@ -126,6 +316,7 @@ def restore_original(resources_dir):
         print("[!] 检测到 Antigravity.exe 仍在运行，还原后请务必彻底退出（含系统托盘）再重开。")
     shutil.copy2(backup_asar, target_asar)
     print("[✓] 已从 app.asar.bak 恢复官方原版 app.asar。")
+    restore_shortcuts(silent=True)
     cache_dir = get_i18n_cache_dir()
     if cache_dir and os.path.exists(cache_dir):
         shutil.rmtree(cache_dir, ignore_errors=True)
@@ -135,11 +326,122 @@ def restore_original(resources_dir):
     print("=" * 64)
 
 
+def read_installed_app_version(resources_dir):
+    ver_file = os.path.join(os.path.dirname(resources_dir), "version")
+    if os.path.exists(ver_file):
+        try:
+            with open(ver_file, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return ""
+
+
+def print_status():
+    print("=" * 64)
+    print("  Antigravity 中文汉化状态检查 (agy-chinese)")
+    print("=" * 64)
+    resources_dir = find_antigravity_resources()
+    if not resources_dir:
+        print("[!] 未在默认安装路径检测到 Antigravity。")
+    else:
+        target_asar = os.path.join(resources_dir, "app.asar")
+        backup_asar = os.path.join(resources_dir, "app.asar.bak")
+        app_ver = read_installed_app_version(resources_dir) or "未知"
+        localized = is_asar_localized(target_asar)
+        print(f"[*] 资源目录        : {resources_dir}")
+        print(f"[*] 客户端版本      : {app_ver}")
+        print(f"[*] app.asar 汉化   : {'已注入 (含自动热同步)' if localized else '未注入 / 原版'}")
+        print(f"[*] 原版备份 (.bak) : {'存在' if os.path.exists(backup_asar) else '不存在'}")
+        print(f"[*] 客户端运行状态  : {'运行中' if is_antigravity_running() else '未运行'}")
+
+    cache_dir = get_i18n_cache_dir()
+    if cache_dir and os.path.exists(cache_dir):
+        cached_manifest = os.path.join(cache_dir, "manifest.json")
+        cached_ver = "无 manifest"
+        if os.path.exists(cached_manifest):
+            try:
+                with open(cached_manifest, "r", encoding="utf-8") as f:
+                    cached_ver = json.load(f).get("locale_version", "未知")
+            except Exception:
+                cached_ver = "读取失败"
+        print(f"[*] 热同步缓存目录  : {cache_dir} (locale_version={cached_ver})")
+    else:
+        print(f"[*] 热同步缓存目录  : 未创建 ({cache_dir or '未知'})")
+
+
+def run_repo_check():
+    print("=" * 64)
+    print("  agy-chinese 仓库静态门禁与词库一致性校验")
+    print("=" * 64)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(script_dir)
+
+    json_targets = [
+        os.path.join(repo_root, "manifest.json"),
+        os.path.join(script_dir, "custom_overrides.json"),
+        os.path.join(script_dir, "i18n_data.json"),
+    ]
+    loaded = {}
+    for jp in json_targets:
+        if not os.path.exists(jp):
+            print(f"[错误] 缺少文件: {jp}")
+            sys.exit(1)
+        with open(jp, "r", encoding="utf-8") as f:
+            loaded[os.path.basename(jp)] = json.load(f)
+        print(f"[✓] JSON 合法性通过: {os.path.relpath(jp, repo_root)}")
+
+    i18n_data = loaded["i18n_data.json"]
+    exact = i18n_data.get("exact", {})
+    rev_map = i18n_data.get("reverse_map", {})
+    regex_rules = i18n_data.get("regex_rules", [])
+    for idx, rule in enumerate(regex_rules):
+        try:
+            re.compile(rule["pattern"])
+        except Exception as exc:
+            print(f"[错误] regex_rules[{idx}] 正则无效: {rule.get('pattern')} ({exc})")
+            sys.exit(1)
+    for zh, en in rev_map.items():
+        if exact.get(en) and exact.get(en) != zh:
+            print(f"[!] reverse_map 提示: '{zh}' -> '{en}' 与 exact['{en}']='{exact.get(en)}' 不一致")
+    print(f"[✓] 词库校验通过: exact={len(exact)}, reverse_map={len(rev_map)}, regex_rules={len(regex_rules)}")
+
+    js_targets = [
+        os.path.join(script_dir, "i18n_runner.js"),
+        os.path.join(script_dir, "cdp_inject.mjs"),
+    ]
+    for jsp in js_targets:
+        if os.path.exists(jsp):
+            chk = subprocess.run(["node", "--check", jsp], capture_output=True, text=True)
+            if chk.returncode != 0:
+                print(f"[错误] 语法校验失败 {jsp}:\n{chk.stderr}")
+                sys.exit(1)
+            print(f"[✓] JS 语法门禁通过: {os.path.relpath(jsp, repo_root)}")
+    print("[✓] 全部校验通过。")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Antigravity Chinese Locale Installer")
     parser.add_argument("--restore", action="store_true", help="还原官方英文原版 app.asar 并清理缓存")
     parser.add_argument("--check-and-launch", action="store_true", help="检查汉化状态，缺失时自动补全后启动 Antigravity")
+    parser.add_argument("--install-shortcut", action="store_true", help="将桌面/开始菜单 Antigravity 快捷方式替换为静默防失效启动器")
+    parser.add_argument("--restore-shortcut", action="store_true", help="将快捷方式还原为官方 Antigravity.exe")
+    parser.add_argument("--silent", action="store_true", help="静默非交互模式（供快捷方式调用）")
+    parser.add_argument("--status", action="store_true", help="查看当前 Antigravity 汉化与热缓存状态")
+    parser.add_argument("--check", action="store_true", help="校验仓库 JSON 词库、正则与 JS 语法（不改写客户端）")
     args = parser.parse_args()
+
+    if args.check:
+        run_repo_check()
+        return
+
+    if args.status:
+        print_status()
+        return
+
+    if args.restore_shortcut:
+        restore_shortcuts(silent=False)
+        return
 
     print("=" * 64)
     print("  Antigravity 中文汉化部署工具 (xhpx7301/agy-chinese)")
@@ -149,6 +451,8 @@ def main():
     resources_dir = find_antigravity_resources()
     if not resources_dir:
         print("[!] 未在默认安装路径检测到 Antigravity。")
+        if args.silent:
+            sys.exit(1)
         user_in = input("请输入 Antigravity 的 resources 目录路径: ").strip()
         if os.path.exists(user_in) and os.path.exists(os.path.join(user_in, "app.asar")):
             resources_dir = user_in
@@ -159,6 +463,10 @@ def main():
     print(f"[✓] 已定位 Antigravity 资源目录: {resources_dir}")
     target_asar = os.path.join(resources_dir, "app.asar")
     backup_asar = os.path.join(resources_dir, "app.asar.bak")
+
+    if args.install_shortcut:
+        install_shortcuts(resources_dir)
+        return
 
     if args.restore:
         restore_original(resources_dir)
