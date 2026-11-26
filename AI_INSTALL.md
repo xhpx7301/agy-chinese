@@ -44,6 +44,13 @@ python scripts/deploy_chinese.py --install-shortcut
 python scripts/deploy_chinese.py --restore-shortcut
 ```
 
+### 一键安装 / 卸载 Obsidian Prism 光学 UI 美化套件（可选，GPL-3.0）
+```bash
+python scripts/install_obsidian_prism.py
+python scripts/install_obsidian_prism.py --status
+python scripts/install_obsidian_prism.py --uninstall
+```
+
 ### 还原官方英文原版
 ```bash
 python scripts/deploy_chinese.py --restore

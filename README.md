@@ -30,19 +30,20 @@ Google Antigravity 桌面端深度汉化包与自动同步工程方案（基于 
 3. **彻底退出 Antigravity**（右键任务栏右下角系统托盘图标选择退出），再重新打开即可生效。
 4. **日常防失效启动**：可直接双击 `启动Antigravity(自动检查汉化).bat` 启动客户端；或双击 `一键配置桌面防失效快捷方式.bat`（也可执行 `python scripts/deploy_chinese.py --install-shortcut`）将桌面/开始菜单快捷方式升级为无黑框静默自检启动，官方更新覆盖后点桌面图标也会自动先补打汉化再拉起客户端（自动附加 `--remote-debugging-port=0`）。
 5. **一键安装额度查看插件（可选）**：双击 `一键安装agy-capsule额度插件.bat` 可从官方仓库 [Lumidarin/agy-capsule](https://github.com/Lumidarin/agy-capsule) 自动安装插件并修复桌面/开始菜单/任务栏快捷方式的 CDP 参数。
-6. **客户端内实时切换中/英文**：在 **设置 → 外观** 页面底部点击 **界面语言（简体中文 | English）** 开关，或在任意 Antigravity 窗口按下 **`Alt + Shift + L`** 即可免重启实时切换。
-7. **状态检查与静态校验**：
+6. **一键安装光学 UI 美化套件（可选）**：双击 `一键安装obsidian-prism美化套件.bat`（或执行 `python scripts/install_obsidian_prism.py`）可从官方仓库 [RMvdesi/obsidian-prism](https://github.com/RMvdesi/obsidian-prism)（GPL-3.0 协议）实时拉取并部署光学主题、512K 玻璃瓶、思维翻译与桌面像素宠物，自动保留 `agy-chinese` 防失效快捷方式（支持 `--status` / `--uninstall`）。注：其自带额度面板与 `agy-capsule` 功能有重叠，建议按需二选一；切勿执行其 `clean:legacy`，以免清除 `app.asar` 汉化。
+7. **客户端内实时切换中/英文**：在 **设置 → 外观** 页面底部点击 **界面语言（简体中文 | English）** 开关，或在任意 Antigravity 窗口按下 **`Alt + Shift + L`** 即可免重启实时切换。
+8. **状态检查与静态校验**：
    ```bash
    python scripts/deploy_chinese.py --status
    python scripts/deploy_chinese.py --check
    ```
-8. **零改包 CDP 模式（可选，适合 macOS 保签名或热调试）**：
+9. **零改包 CDP 模式（可选，适合 macOS 保签名或热调试）**：
    ```bash
    node scripts/cdp_inject.mjs --watch
    node scripts/cdp_inject.mjs --dump-untranslated
    ```
-9. **还原官方英文**：如需恢复官方原版，双击 `一键还原官方英文.bat`（或执行 `python scripts/deploy_chinese.py --restore`）。
-10. **AI 助手一键接入**：可参考 [AI_INSTALL.md](AI_INSTALL.md)。
+10. **还原官方英文**：如需恢复官方原版，双击 `一键还原官方英文.bat`（或执行 `python scripts/deploy_chinese.py --restore`）。
+11. **AI 助手一键接入**：可参考 [AI_INSTALL.md](AI_INSTALL.md)。
 
 ### 方式二：作为 Antigravity Skill 使用
 将 `skills/Chinesizing` 复制到全局技能目录：
