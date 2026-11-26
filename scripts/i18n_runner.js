@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = "2026.11.26.3";
+    var RUNNER_VERSION = "2026.11.26.7";
 
     if (window.__antigravity_i18n_runner_active) {
         if (window.__antigravity_runner_version === RUNNER_VERSION) {
@@ -120,7 +120,14 @@
                 if (EXCLUDED_TAGS[tag]) return true;
                 if (curr.isContentEditable) return true;
                 if (curr.getAttribute) {
-                    if (curr.getAttribute("data-i18n-ignore") === "true") return true;
+                    if (curr.getAttribute("data-i18n-ignore") === "true" ||
+                        curr.getAttribute("translate") === "no" ||
+                        curr.getAttribute("data-no-translate") === "true" ||
+                        curr.getAttribute("data-ag-localization-skip") === "true" ||
+                        curr.getAttribute("data-agy-no-translate") === "true" ||
+                        curr.getAttribute("data-antigravity-zh-skip") === "1") {
+                        return true;
+                    }
                     var role = curr.getAttribute("role");
                     if (role === "textbox" || role === "code") return true;
                 }
@@ -492,6 +499,485 @@
         return pageRoot;
     }
 
+    var WORKBENCH_KEY = "__antigravity_workbench_cfg__";
+    function loadWorkbenchCfg() {
+        try {
+            var raw = window.localStorage && window.localStorage.getItem(WORKBENCH_KEY);
+            if (raw) {
+                var p = JSON.parse(raw);
+                return {
+                    codeFold: p.codeFold !== false,
+                    turnJump: p.turnJump !== false
+                };
+            }
+        } catch (e) {}
+        return { codeFold: true, turnJump: true };
+    }
+    function saveWorkbenchCfg(cfg) {
+        try {
+            if (window.localStorage) window.localStorage.setItem(WORKBENCH_KEY, JSON.stringify(cfg));
+        } catch (e) {}
+    }
+    var workbenchCfg = loadWorkbenchCfg();
+
+    var thoughtCfg = {
+        mode: "off",
+        viewMode: "bilingual",
+        triggerMode: "expand",
+        aiBaseUrl: "",
+        aiModel: "",
+        aiStyle: "technical",
+        hasApiKey: false
+    };
+    var thoughtCfgLoaded = false;
+
+    function hasThoughtBridge() {
+        return Boolean(
+            window.agyChineseBridge &&
+            typeof window.agyChineseBridge.translateThought === "function" &&
+            typeof window.agyChineseBridge.getThoughtConfig === "function"
+        );
+    }
+
+    var THOUGHT_CACHE_KEY = "__antigravity_thought_cache_v1__";
+    var THOUGHT_CACHE_MAX = 80;
+    var thoughtMemCache = {};
+    var thoughtCacheOrder = [];
+    var thoughtInflight = {};
+    var thoughtActiveCount = 0;
+    var THOUGHT_MAX_CONCURRENT = 2;
+    var thoughtQueue = [];
+
+    function loadThoughtCache() {
+        try {
+            var raw = window.localStorage && window.localStorage.getItem(THOUGHT_CACHE_KEY);
+            if (!raw) return;
+            var obj = JSON.parse(raw);
+            if (obj && typeof obj === "object") {
+                for (var k in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, k) && typeof obj[k] === "string") {
+                        thoughtMemCache[k] = obj[k];
+                        thoughtCacheOrder.push(k);
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+    loadThoughtCache();
+
+    function setThoughtCacheEntry(sig, val) {
+        if (!sig || typeof val !== "string") return;
+        if (!Object.prototype.hasOwnProperty.call(thoughtMemCache, sig)) {
+            thoughtCacheOrder.push(sig);
+        }
+        thoughtMemCache[sig] = val;
+        while (thoughtCacheOrder.length > THOUGHT_CACHE_MAX) {
+            var oldest = thoughtCacheOrder.shift();
+            delete thoughtMemCache[oldest];
+        }
+        try {
+            if (window.localStorage) {
+                window.localStorage.setItem(THOUGHT_CACHE_KEY, JSON.stringify(thoughtMemCache));
+            }
+        } catch (e) {}
+    }
+
+    function hashString(str) {
+        var h = 2166136261;
+        for (var i = 0; i < str.length; i++) {
+            h ^= str.charCodeAt(i);
+            h = (h * 16777619) >>> 0;
+        }
+        return h.toString(36) + "_" + str.length;
+    }
+
+    function getThoughtPanelForTrigger(trigger) {
+        if (!trigger) return null;
+        var ctrlId = trigger.getAttribute && trigger.getAttribute("aria-controls");
+        if (ctrlId && document.getElementById) {
+            var byId = document.getElementById(ctrlId);
+            if (byId) return byId;
+        }
+        var p = trigger.parentNode;
+        for (var d = 0; p && p !== document.body && d < 3; d++) {
+            var children = p.children;
+            if (children && children.length >= 2) {
+                for (var i = 0; i < children.length; i++) {
+                    var ch = children[i];
+                    if (ch !== trigger && (!ch.contains || !ch.contains(trigger))) {
+                        return ch;
+                    }
+                }
+            }
+            p = p.parentNode;
+        }
+        return null;
+    }
+
+    function extractThoughtSource(panelEl) {
+        if (!panelEl) return "";
+        var cloneParts = [];
+        var walker = document.createTreeWalker(
+            panelEl,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: function (n) {
+                    var c = n.parentNode;
+                    while (c && c !== panelEl) {
+                        if (c.nodeType === 1 && c.className && typeof c.className === "string" && c.className.indexOf("__ag_thought_box__") !== -1) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        c = c.parentNode;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            },
+            false
+        );
+        var n;
+        while ((n = walker.nextNode())) {
+            var v = (n.nodeValue || "").replace(/\s+/g, " ").trim();
+            if (v) cloneParts.push(v);
+        }
+        return cloneParts.join("\n").trim();
+    }
+
+    function setOriginalThoughtChildrenVisible(panelEl, visible) {
+        if (!panelEl || !panelEl.children) return;
+        for (var i = 0; i < panelEl.children.length; i++) {
+            var ch = panelEl.children[i];
+            if (ch.className && typeof ch.className === "string" && ch.className.indexOf("__ag_thought_box__") !== -1) {
+                continue;
+            }
+            if (!visible) {
+                if (ch.getAttribute("data-ag-orig-hidden") !== "1") {
+                    ch.setAttribute("data-ag-orig-display", ch.style.display || "");
+                    ch.setAttribute("data-ag-orig-hidden", "1");
+                }
+                ch.style.display = "none";
+            } else if (ch.getAttribute("data-ag-orig-hidden") === "1") {
+                ch.style.display = ch.getAttribute("data-ag-orig-display") || "";
+                ch.removeAttribute("data-ag-orig-hidden");
+                ch.removeAttribute("data-ag-orig-display");
+            }
+        }
+    }
+
+    function clearAllThoughtBoxes() {
+        try {
+            if (!document.querySelectorAll) return;
+            var boxes = document.querySelectorAll(".__ag_thought_box__");
+            for (var i = 0; i < boxes.length; i++) {
+                var box = boxes[i];
+                var parent = box.parentNode;
+                if (parent) {
+                    setOriginalThoughtChildrenVisible(parent, true);
+                    parent.removeChild(box);
+                }
+            }
+        } catch (e) {}
+    }
+
+    function renderThoughtTextBody(bodyEl, text) {
+        while (bodyEl.firstChild) bodyEl.removeChild(bodyEl.firstChild);
+        var paras = String(text || "").split(/\n+/);
+        for (var i = 0; i < paras.length; i++) {
+            var line = paras[i].trim();
+            if (!line) continue;
+            var p = document.createElement("p");
+            p.style.cssText = "margin:4px 0;line-height:1.55;font-size:12.5px;color:inherit;white-space:pre-wrap;word-break:break-word;";
+            p.textContent = line;
+            bodyEl.appendChild(p);
+        }
+    }
+
+    function ensureThoughtBox(panelEl, sig, srcText) {
+        var box = null;
+        if (panelEl.children) {
+            for (var i = 0; i < panelEl.children.length; i++) {
+                var ch = panelEl.children[i];
+                if (ch.className && typeof ch.className === "string" && ch.className.indexOf("__ag_thought_box__") !== -1) {
+                    box = ch;
+                    break;
+                }
+            }
+        }
+        if (!box) {
+            box = document.createElement("div");
+            box.className = "__ag_thought_box__";
+            box.setAttribute("data-i18n-ignore", "true");
+            box.style.cssText =
+                "margin:6px 0 10px 0;padding:10px 12px;border-radius:8px;" +
+                "border:1px solid rgba(59,130,246,0.28);background:rgba(59,130,246,0.06);";
+
+            var bar = document.createElement("div");
+            bar.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:11px;opacity:0.82;";
+
+            var badge = document.createElement("span");
+            badge.setAttribute("data-ag-role", "badge");
+            badge.style.cssText = "font-weight:600;color:#60a5fa;";
+
+            var actions = document.createElement("span");
+            actions.style.cssText = "display:inline-flex;align-items:center;gap:8px;";
+
+            var viewBtn = document.createElement("button");
+            viewBtn.type = "button";
+            viewBtn.setAttribute("data-ag-role", "view-btn");
+            viewBtn.style.cssText = "background:none;border:none;padding:0;font-size:11px;cursor:pointer;color:inherit;text-decoration:underline;";
+            viewBtn.addEventListener("click", function (ev) {
+                ev.stopPropagation();
+                thoughtCfg.viewMode = thoughtCfg.viewMode === "immersive" ? "bilingual" : "immersive";
+                if (hasThoughtBridge()) {
+                    window.agyChineseBridge.saveThoughtConfig({ viewMode: thoughtCfg.viewMode });
+                }
+                ensureAppearancePanel();
+                scanThoughtBlocks();
+            });
+
+            var rawBtn = document.createElement("button");
+            rawBtn.type = "button";
+            rawBtn.setAttribute("data-ag-role", "raw-btn");
+            rawBtn.textContent = "原文";
+            rawBtn.style.cssText = "background:none;border:none;padding:0;font-size:11px;cursor:pointer;color:inherit;text-decoration:underline;";
+            rawBtn.addEventListener("click", function (ev) {
+                ev.stopPropagation();
+                var nextRaw = box.getAttribute("data-ag-show-raw") !== "1";
+                box.setAttribute("data-ag-show-raw", nextRaw ? "1" : "0");
+                rawBtn.textContent = nextRaw ? "显示译文" : "原文";
+                syncBoxVisibility(box, panelEl);
+            });
+
+            var retryBtn = document.createElement("button");
+            retryBtn.type = "button";
+            retryBtn.textContent = "重译";
+            retryBtn.style.cssText = "background:none;border:none;padding:0;font-size:11px;cursor:pointer;color:inherit;text-decoration:underline;";
+            retryBtn.addEventListener("click", function (ev) {
+                ev.stopPropagation();
+                var s = box.getAttribute("data-ag-sig") || "";
+                if (s) delete thoughtMemCache[s];
+                box.removeAttribute("data-ag-state");
+                enqueueThoughtTranslation(panelEl, box, s, box.__agSrcText || srcText);
+            });
+
+            actions.appendChild(viewBtn);
+            actions.appendChild(rawBtn);
+            actions.appendChild(retryBtn);
+            bar.appendChild(badge);
+            bar.appendChild(actions);
+
+            var body = document.createElement("div");
+            body.setAttribute("data-ag-role", "body");
+
+            box.appendChild(bar);
+            box.appendChild(body);
+            if (panelEl.firstChild) {
+                panelEl.insertBefore(box, panelEl.firstChild);
+            } else {
+                panelEl.appendChild(box);
+            }
+        }
+        box.__agSrcText = srcText;
+        box.setAttribute("data-ag-sig", sig);
+        var bEl = box.querySelector("[data-ag-role='badge']");
+        var vEl = box.querySelector("[data-ag-role='view-btn']");
+        if (bEl) bEl.textContent = thoughtCfg.mode === "ai" ? "思维译文 · AI 润色" : "思维译文 · 机翻";
+        if (vEl) vEl.textContent = thoughtCfg.viewMode === "immersive" ? "切换双语" : "切换沉浸";
+        return box;
+    }
+
+    function syncBoxVisibility(box, panelEl) {
+        var state = box.getAttribute("data-ag-state");
+        var showRaw = box.getAttribute("data-ag-show-raw") === "1";
+        var bodyEl = box.querySelector("[data-ag-role='body']");
+        if (bodyEl) bodyEl.style.display = showRaw ? "none" : "block";
+        var shouldHideOrig = state === "done" && thoughtCfg.viewMode === "immersive" && !showRaw;
+        setOriginalThoughtChildrenVisible(panelEl, !shouldHideOrig);
+    }
+
+    function pumpThoughtQueue() {
+        while (thoughtActiveCount < THOUGHT_MAX_CONCURRENT && thoughtQueue.length > 0) {
+            var job = thoughtQueue.shift();
+            if (!job) continue;
+            runThoughtJob(job);
+        }
+    }
+
+    function runThoughtJob(job) {
+        if (!hasThoughtBridge()) return;
+        thoughtActiveCount++;
+        var sig = job.sig;
+        var promise = thoughtInflight[sig];
+        if (!promise) {
+            promise = window.agyChineseBridge.translateThought({
+                text: job.srcText,
+                mode: thoughtCfg.mode,
+                style: thoughtCfg.aiStyle
+            });
+            thoughtInflight[sig] = promise;
+        }
+        promise.then(function (res) {
+            delete thoughtInflight[sig];
+            thoughtActiveCount--;
+            if (res && res.ok && res.translated) {
+                setThoughtCacheEntry(sig, res.translated);
+                if (job.box && job.panelEl) {
+                    job.box.setAttribute("data-ag-state", "done");
+                    var bodyEl = job.box.querySelector("[data-ag-role='body']");
+                    if (bodyEl) renderThoughtTextBody(bodyEl, res.translated);
+                    syncBoxVisibility(job.box, job.panelEl);
+                }
+            } else if (job.box && job.panelEl) {
+                job.box.setAttribute("data-ag-state", "error");
+                var errEl = job.box.querySelector("[data-ag-role='body']");
+                if (errEl) renderThoughtTextBody(errEl, "翻译失败: " + ((res && res.error) || "未知错误"));
+                setOriginalThoughtChildrenVisible(job.panelEl, true);
+            }
+            pumpThoughtQueue();
+        }, function (err) {
+            delete thoughtInflight[sig];
+            thoughtActiveCount--;
+            if (job.box && job.panelEl) {
+                job.box.setAttribute("data-ag-state", "error");
+                var errEl = job.box.querySelector("[data-ag-role='body']");
+                if (errEl) renderThoughtTextBody(errEl, "翻译异常: " + (err && err.message ? err.message : String(err)));
+                setOriginalThoughtChildrenVisible(job.panelEl, true);
+            }
+            pumpThoughtQueue();
+        });
+    }
+
+    function enqueueThoughtTranslation(panelEl, box, sig, srcText) {
+        if (Object.prototype.hasOwnProperty.call(thoughtMemCache, sig)) {
+            box.setAttribute("data-ag-state", "done");
+            var bodyEl = box.querySelector("[data-ag-role='body']");
+            if (bodyEl) renderThoughtTextBody(bodyEl, thoughtMemCache[sig]);
+            syncBoxVisibility(box, panelEl);
+            return;
+        }
+        if (box.getAttribute("data-ag-state") === "pending") return;
+        box.setAttribute("data-ag-state", "pending");
+        var b = box.querySelector("[data-ag-role='body']");
+        if (b) renderThoughtTextBody(b, thoughtCfg.mode === "ai" ? "正在 AI 润色翻译思考过程..." : "正在翻译思考过程...");
+        setOriginalThoughtChildrenVisible(panelEl, true);
+        thoughtQueue.push({ panelEl: panelEl, box: box, sig: sig, srcText: srcText });
+        pumpThoughtQueue();
+    }
+
+    function scanThoughtBlocks() {
+        if (currentLang === "en" || thoughtCfg.mode === "off" || !hasThoughtBridge()) {
+            clearAllThoughtBoxes();
+            return;
+        }
+        try {
+            if (!document.querySelectorAll) return;
+            var triggers = document.querySelectorAll('button[data-testid="thinking-collapsible-trigger"]');
+            for (var i = 0; i < triggers.length; i++) {
+                var trg = triggers[i];
+                var expanded = trg.getAttribute("aria-expanded") === "true";
+                if (thoughtCfg.triggerMode === "expand" && !expanded) continue;
+                var panelEl = getThoughtPanelForTrigger(trg);
+                if (!panelEl) continue;
+                var srcText = extractThoughtSource(panelEl);
+                if (!srcText || !/[A-Za-z]{4,}/.test(srcText)) continue;
+                var sig = hashString(thoughtCfg.mode + ":" + thoughtCfg.aiStyle + ":" + srcText);
+                var box = ensureThoughtBox(panelEl, sig, srcText);
+                if (box.getAttribute("data-ag-state") === "done" && box.getAttribute("data-ag-sig") === sig) {
+                    syncBoxVisibility(box, panelEl);
+                    continue;
+                }
+                enqueueThoughtTranslation(panelEl, box, sig, srcText);
+            }
+        } catch (e) {}
+    }
+
+    function enhanceCodeBlocks() {
+        if (!workbenchCfg.codeFold) return;
+        try {
+            if (!document.querySelectorAll) return;
+            var pres = document.querySelectorAll("pre");
+            for (var i = 0; i < pres.length; i++) {
+                var pre = pres[i];
+                if (isInsideExcluded(pre.parentNode)) continue;
+                var text = pre.textContent || "";
+                var lineCount = text.split("\n").length;
+                if (lineCount < 48) continue;
+                var btn = pre.querySelector ? pre.querySelector(".__ag_code_fold_btn__") : null;
+                if (!btn) {
+                    if (!pre.style.position) pre.style.position = "relative";
+                    btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "__ag_code_fold_btn__";
+                    btn.setAttribute("data-i18n-ignore", "true");
+                    btn.style.cssText =
+                        "position:absolute;top:6px;right:8px;z-index:10;padding:2px 8px;border-radius:6px;" +
+                        "font-size:11px;line-height:1.4;cursor:pointer;border:1px solid rgba(128,128,128,0.35);" +
+                        "background:rgba(24,24,27,0.82);color:#e4e4e7;";
+                    (function (preNode, foldBtn, lines) {
+                        foldBtn.addEventListener("click", function (ev) {
+                            ev.stopPropagation();
+                            var isFolded = preNode.getAttribute("data-ag-folded") === "1";
+                            if (isFolded) {
+                                preNode.setAttribute("data-ag-folded", "0");
+                                preNode.style.maxHeight = "";
+                                preNode.style.overflow = "";
+                                foldBtn.textContent = "折叠 (" + lines + "行)";
+                            } else {
+                                preNode.setAttribute("data-ag-folded", "1");
+                                preNode.style.maxHeight = "260px";
+                                preNode.style.overflow = "hidden";
+                                foldBtn.textContent = "展开 (" + lines + "行)";
+                            }
+                        });
+                    })(pre, btn, lineCount);
+                    pre.appendChild(btn);
+                }
+                var folded = pre.getAttribute("data-ag-folded") === "1";
+                btn.textContent = (folded ? "展开 (" : "折叠 (") + lineCount + "行)";
+            }
+        } catch (e) {}
+    }
+
+    function jumpConversationTurn(direction) {
+        if (!workbenchCfg.turnJump || !document.querySelectorAll) return false;
+        var turns = document.querySelectorAll('[data-testid="conversation-navigator-turn"]');
+        if (!turns || turns.length === 0) return false;
+        var list = [];
+        for (var i = 0; i < turns.length; i++) {
+            var r = turns[i].getBoundingClientRect ? turns[i].getBoundingClientRect() : null;
+            if (r && (r.height > 0 || r.width > 0)) list.push({ el: turns[i], top: r.top });
+        }
+        if (list.length === 0) return false;
+        var targetIdx = 0;
+        if (direction < 0) {
+            targetIdx = 0;
+            for (var j = list.length - 1; j >= 0; j--) {
+                if (list[j].top < -12) { targetIdx = j; break; }
+            }
+        } else {
+            targetIdx = list.length - 1;
+            for (var k = 0; k < list.length; k++) {
+                if (list[k].top > 24) { targetIdx = k; break; }
+            }
+        }
+        if (typeof list[targetIdx].el.scrollIntoView === "function") {
+            list[targetIdx].el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        showToast("对话轮次: " + (targetIdx + 1) + " / " + list.length);
+        return true;
+    }
+
+    function initThoughtConfigFromBridge() {
+        if (!hasThoughtBridge() || thoughtCfgLoaded) return;
+        thoughtCfgLoaded = true;
+        window.agyChineseBridge.getThoughtConfig().then(function (cfg) {
+            if (cfg && typeof cfg === "object") {
+                thoughtCfg = cfg;
+                ensureAppearancePanel();
+                scanThoughtBlocks();
+            }
+        }).catch(function () {});
+    }
+
     function updateAppearancePanelState(panel) {
         if (!panel) return;
         var isEn = currentLang === "en";
@@ -516,6 +1002,57 @@
             enBtn.style.cssText = isEn ? activeStyle : idleStyle;
             enBtn.setAttribute("aria-pressed", isEn ? "true" : "false");
         }
+
+        // Thought & Workbench controls inside the same card
+        var bridgeOk = hasThoughtBridge();
+        if (panel.__i18nModeBtns) {
+            for (var mKey in panel.__i18nModeBtns) {
+                var mb = panel.__i18nModeBtns[mKey];
+                mb.disabled = !bridgeOk;
+                mb.style.cssText = (thoughtCfg.mode === mKey ? activeStyle : idleStyle) + (bridgeOk ? "" : "opacity:0.45;cursor:not-allowed;");
+            }
+        }
+        if (panel.__i18nViewBtns) {
+            for (var vKey in panel.__i18nViewBtns) {
+                panel.__i18nViewBtns[vKey].style.cssText = thoughtCfg.viewMode === vKey ? activeStyle : idleStyle;
+            }
+        }
+        if (panel.__i18nTrigBtns) {
+            for (var tKey in panel.__i18nTrigBtns) {
+                panel.__i18nTrigBtns[tKey].style.cssText = thoughtCfg.triggerMode === tKey ? activeStyle : idleStyle;
+            }
+        }
+        if (panel.__i18nThoughtSubRow) {
+            panel.__i18nThoughtSubRow.style.display = bridgeOk && thoughtCfg.mode !== "off" ? "flex" : "none";
+        }
+        if (panel.__i18nBridgeHint) {
+            panel.__i18nBridgeHint.style.display = bridgeOk ? "none" : "block";
+        }
+        if (panel.__i18nAiBox) {
+            panel.__i18nAiBox.style.display = bridgeOk && thoughtCfg.mode === "ai" ? "block" : "none";
+        }
+        if (panel.__i18nAiUrl && document.activeElement !== panel.__i18nAiUrl) {
+            panel.__i18nAiUrl.value = thoughtCfg.aiBaseUrl || "";
+        }
+        if (panel.__i18nAiModel && document.activeElement !== panel.__i18nAiModel) {
+            panel.__i18nAiModel.value = thoughtCfg.aiModel || "";
+        }
+        if (panel.__i18nAiStyle && document.activeElement !== panel.__i18nAiStyle) {
+            panel.__i18nAiStyle.value = thoughtCfg.aiStyle || "technical";
+        }
+        if (panel.__i18nAiKey && document.activeElement !== panel.__i18nAiKey && !panel.__i18nAiKey.value && thoughtCfg.hasApiKey) {
+            panel.__i18nAiKey.placeholder = "已保存密钥 (留空保持不变)";
+        }
+        if (panel.__i18nFoldChk) panel.__i18nFoldChk.checked = Boolean(workbenchCfg.codeFold);
+        if (panel.__i18nJumpChk) panel.__i18nJumpChk.checked = Boolean(workbenchCfg.turnJump);
+    }
+
+    function makePillGroup() {
+        var pill = document.createElement("div");
+        pill.style.cssText =
+            "display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:8px;" +
+            "border:1px solid rgba(128,128,128,0.24);background:rgba(128,128,128,0.08);flex-shrink:0;";
+        return pill;
     }
 
     function buildAppearancePanel() {
@@ -523,9 +1060,13 @@
         panel.id = PANEL_ID;
         panel.setAttribute("data-i18n-ignore", "true");
         panel.style.cssText =
-            "display:flex;align-items:center;justify-content:space-between;gap:16px;" +
+            "display:flex;flex-direction:column;gap:12px;" +
             "padding:14px 16px;margin-top:12px;border-radius:10px;" +
             "border:1px solid rgba(128,128,128,0.22);background:rgba(128,128,128,0.06);";
+
+        // Row 1: Display Language
+        var langRow = document.createElement("div");
+        langRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:16px;";
 
         var left = document.createElement("div");
         left.style.cssText = "min-width:0;flex:1;";
@@ -541,36 +1082,246 @@
         left.appendChild(title);
         left.appendChild(desc);
 
-        var pill = document.createElement("div");
-        pill.style.cssText =
-            "display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:8px;" +
-            "border:1px solid rgba(128,128,128,0.24);background:rgba(128,128,128,0.08);flex-shrink:0;";
-
+        var pill = makePillGroup();
         var zhBtn = document.createElement("button");
         zhBtn.type = "button";
         zhBtn.setAttribute("data-i18n-lang", "zh-CN");
         zhBtn.textContent = "简体中文";
-        zhBtn.addEventListener("click", function () {
-            window.__antigravity_setLang("zh-CN");
-        });
+        zhBtn.addEventListener("click", function () { window.__antigravity_setLang("zh-CN"); });
 
         var enBtn = document.createElement("button");
         enBtn.type = "button";
         enBtn.setAttribute("data-i18n-lang", "en");
         enBtn.textContent = "English";
-        enBtn.addEventListener("click", function () {
-            window.__antigravity_setLang("en");
-        });
+        enBtn.addEventListener("click", function () { window.__antigravity_setLang("en"); });
 
         pill.appendChild(zhBtn);
         pill.appendChild(enBtn);
-        panel.appendChild(left);
-        panel.appendChild(pill);
+        langRow.appendChild(left);
+        langRow.appendChild(pill);
+        panel.appendChild(langRow);
+
+        // Row 2: Thought Translator (Dual-Mode)
+        var thoughtSection = document.createElement("div");
+        thoughtSection.style.cssText = "border-top:1px solid rgba(128,128,128,0.16);padding-top:12px;display:flex;flex-direction:column;gap:10px;";
+
+        var tRow = document.createElement("div");
+        tRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:16px;";
+
+        var tLeft = document.createElement("div");
+        tLeft.style.cssText = "min-width:0;flex:1;";
+        var tTitle = document.createElement("div");
+        tTitle.textContent = "思考过程双模翻译 (Beta)";
+        tTitle.style.cssText = "font-size:13px;font-weight:600;line-height:1.4;color:inherit;";
+        var tDesc = document.createElement("div");
+        tDesc.textContent = "零后台常驻进程，支持免配置机翻与本地/兼容 AI 流式润色";
+        tDesc.style.cssText = "font-size:12px;line-height:1.4;opacity:0.72;margin-top:2px;color:inherit;";
+        tLeft.appendChild(tTitle);
+        tLeft.appendChild(tDesc);
+
+        var modePill = makePillGroup();
+        var modeBtns = {};
+        var modes = [["off", "关闭"], ["machine", "机翻"], ["ai", "AI 润色"]];
+        for (var i = 0; i < modes.length; i++) {
+            (function (mKey, mLabel) {
+                var b = document.createElement("button");
+                b.type = "button";
+                b.textContent = mLabel;
+                b.addEventListener("click", function () {
+                    if (!hasThoughtBridge()) return;
+                    thoughtCfg.mode = mKey;
+                    window.agyChineseBridge.saveThoughtConfig({ mode: mKey }).then(function (res) {
+                        if (res && res.config) thoughtCfg = res.config;
+                        updateAppearancePanelState(panel);
+                        scanThoughtBlocks();
+                    });
+                });
+                modeBtns[mKey] = b;
+                modePill.appendChild(b);
+            })(modes[i][0], modes[i][1]);
+        }
+        tRow.appendChild(tLeft);
+        tRow.appendChild(modePill);
+        thoughtSection.appendChild(tRow);
+
+        var bridgeHint = document.createElement("div");
+        bridgeHint.textContent = "提示：请重新运行一次 一键汉化.bat 并重开客户端，以注入主进程思考翻译 IPC 桥接。";
+        bridgeHint.style.cssText = "font-size:11.5px;color:#f59e0b;display:none;";
+        thoughtSection.appendChild(bridgeHint);
+
+        var subRow = document.createElement("div");
+        subRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;";
+
+        var viewPill = makePillGroup();
+        var viewBtns = {};
+        var views = [["bilingual", "双语对照"], ["immersive", "沉浸中文"]];
+        for (var vi = 0; vi < views.length; vi++) {
+            (function (vKey, vLabel) {
+                var b = document.createElement("button");
+                b.type = "button";
+                b.textContent = vLabel;
+                b.addEventListener("click", function () {
+                    thoughtCfg.viewMode = vKey;
+                    if (hasThoughtBridge()) window.agyChineseBridge.saveThoughtConfig({ viewMode: vKey });
+                    updateAppearancePanelState(panel);
+                    scanThoughtBlocks();
+                });
+                viewBtns[vKey] = b;
+                viewPill.appendChild(b);
+            })(views[vi][0], views[vi][1]);
+        }
+
+        var trigPill = makePillGroup();
+        var trigBtns = {};
+        var trigs = [["expand", "展开时翻译 (省流)"], ["auto", "自动翻译"]];
+        for (var ti = 0; ti < trigs.length; ti++) {
+            (function (tKey, tLabel) {
+                var b = document.createElement("button");
+                b.type = "button";
+                b.textContent = tLabel;
+                b.addEventListener("click", function () {
+                    thoughtCfg.triggerMode = tKey;
+                    if (hasThoughtBridge()) window.agyChineseBridge.saveThoughtConfig({ triggerMode: tKey });
+                    updateAppearancePanelState(panel);
+                    scanThoughtBlocks();
+                });
+                trigBtns[tKey] = b;
+                trigPill.appendChild(b);
+            })(trigs[ti][0], trigs[ti][1]);
+        }
+        subRow.appendChild(viewPill);
+        subRow.appendChild(trigPill);
+        thoughtSection.appendChild(subRow);
+
+        // AI Config Box
+        var aiBox = document.createElement("div");
+        aiBox.style.cssText = "display:none;padding:10px 12px;border-radius:8px;border:1px solid rgba(128,128,128,0.2);background:rgba(128,128,128,0.05);";
+
+        var inputStyle = "width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid rgba(128,128,128,0.28);background:transparent;color:inherit;font-size:12px;";
+        var grid = document.createElement("div");
+        grid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:8px;";
+
+        var aiUrl = document.createElement("input");
+        aiUrl.type = "text";
+        aiUrl.placeholder = "Base URL (如 http://127.0.0.1:11434/v1)";
+        aiUrl.style.cssText = inputStyle;
+
+        var aiModel = document.createElement("input");
+        aiModel.type = "text";
+        aiModel.placeholder = "Model (如 qwen2.5:7b / deepseek-chat)";
+        aiModel.style.cssText = inputStyle;
+
+        var aiKey = document.createElement("input");
+        aiKey.type = "password";
+        aiKey.placeholder = "API Key (本地 Ollama 可留空)";
+        aiKey.style.cssText = inputStyle;
+
+        var aiStyle = document.createElement("select");
+        aiStyle.style.cssText = inputStyle;
+        var optTech = document.createElement("option");
+        optTech.value = "technical";
+        optTech.textContent = "工程精细还原";
+        var optCon = document.createElement("option");
+        optCon.value = "concise";
+        optCon.textContent = "简明要点摘要";
+        aiStyle.appendChild(optTech);
+        aiStyle.appendChild(optCon);
+
+        grid.appendChild(aiUrl);
+        grid.appendChild(aiModel);
+        grid.appendChild(aiKey);
+        grid.appendChild(aiStyle);
+        aiBox.appendChild(grid);
+
+        var aiFoot = document.createElement("div");
+        aiFoot.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;";
+        var aiStatus = document.createElement("span");
+        aiStatus.style.cssText = "font-size:11.5px;opacity:0.8;color:inherit;";
+        var saveTestBtn = document.createElement("button");
+        saveTestBtn.type = "button";
+        saveTestBtn.textContent = "保存并测试连接";
+        saveTestBtn.style.cssText = "padding:5px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:#3b82f6;color:#ffffff;flex-shrink:0;";
+        saveTestBtn.addEventListener("click", function () {
+            if (!hasThoughtBridge()) return;
+            aiStatus.textContent = "正在测试连接...";
+            var payload = {
+                mode: "ai",
+                aiBaseUrl: aiUrl.value.trim(),
+                aiModel: aiModel.value.trim(),
+                aiStyle: aiStyle.value
+            };
+            if (aiKey.value.trim()) {
+                payload.aiApiKey = aiKey.value.trim();
+            } else if (thoughtCfg.hasApiKey) {
+                payload.aiApiKey = "__KEEP__";
+            }
+            window.agyChineseBridge.testThoughtConfig(payload).then(function (res) {
+                if (res && res.config) thoughtCfg = res.config;
+                aiKey.value = "";
+                updateAppearancePanelState(panel);
+                if (res && res.ok) {
+                    aiStatus.textContent = "连接成功 (" + res.latencyMs + "ms): " + String(res.sample || "").slice(0, 36);
+                    scanThoughtBlocks();
+                } else {
+                    aiStatus.textContent = "测试失败: " + ((res && res.error) || "未知错误");
+                }
+            }).catch(function (err) {
+                aiStatus.textContent = "测试异常: " + (err && err.message ? err.message : String(err));
+            });
+        });
+        aiFoot.appendChild(aiStatus);
+        aiFoot.appendChild(saveTestBtn);
+        aiBox.appendChild(aiFoot);
+        thoughtSection.appendChild(aiBox);
+        panel.appendChild(thoughtSection);
+
+        // Row 3: Lightweight Workbench Controls
+        var wbRow = document.createElement("div");
+        wbRow.style.cssText = "border-top:1px solid rgba(128,128,128,0.16);padding-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;";
+
+        var foldWrap = document.createElement("label");
+        foldWrap.style.cssText = "display:inline-flex;align-items:center;gap:6px;cursor:pointer;";
+        var foldChk = document.createElement("input");
+        foldChk.type = "checkbox";
+        foldChk.addEventListener("change", function () {
+            workbenchCfg.codeFold = Boolean(foldChk.checked);
+            saveWorkbenchCfg(workbenchCfg);
+            if (workbenchCfg.codeFold) enhanceCodeBlocks();
+        });
+        foldWrap.appendChild(foldChk);
+        foldWrap.appendChild(document.createTextNode("长代码块手动折叠 (≥48行)"));
+
+        var jumpWrap = document.createElement("label");
+        jumpWrap.style.cssText = "display:inline-flex;align-items:center;gap:6px;cursor:pointer;";
+        var jumpChk = document.createElement("input");
+        jumpChk.type = "checkbox";
+        jumpChk.addEventListener("change", function () {
+            workbenchCfg.turnJump = Boolean(jumpChk.checked);
+            saveWorkbenchCfg(workbenchCfg);
+        });
+        jumpWrap.appendChild(jumpChk);
+        jumpWrap.appendChild(document.createTextNode("Alt+↑/↓ 轮次快速跳转"));
+
+        wbRow.appendChild(foldWrap);
+        wbRow.appendChild(jumpWrap);
+        panel.appendChild(wbRow);
 
         panel.__i18nTitleEl = title;
         panel.__i18nDescEl = desc;
         panel.__i18nZhBtn = zhBtn;
         panel.__i18nEnBtn = enBtn;
+        panel.__i18nModeBtns = modeBtns;
+        panel.__i18nViewBtns = viewBtns;
+        panel.__i18nTrigBtns = trigBtns;
+        panel.__i18nThoughtSubRow = subRow;
+        panel.__i18nBridgeHint = bridgeHint;
+        panel.__i18nAiBox = aiBox;
+        panel.__i18nAiUrl = aiUrl;
+        panel.__i18nAiModel = aiModel;
+        panel.__i18nAiKey = aiKey;
+        panel.__i18nAiStyle = aiStyle;
+        panel.__i18nFoldChk = foldChk;
+        panel.__i18nJumpChk = jumpChk;
         updateAppearancePanelState(panel);
         return panel;
     }
@@ -602,7 +1353,9 @@
         appearanceSyncTimer = setTimeout(function () {
             appearanceSyncTimer = null;
             ensureAppearancePanel();
-        }, 40);
+            enhanceCodeBlocks();
+            scanThoughtBlocks();
+        }, 120);
     }
 
     function applyLang(nextLang, showNotice) {
@@ -612,9 +1365,11 @@
         saveLang(currentLang);
         if (currentLang === "en") {
             restoreOriginalPage();
+            clearAllThoughtBoxes();
             if (showNotice) showToast("Interface Language: English (Original)");
         } else {
             translateWholePage();
+            scanThoughtBlocks();
             if (showNotice) showToast("界面语言：简体中文 (Alt+Shift+L 切换)");
         }
         ensureAppearancePanel();
@@ -634,24 +1389,48 @@
     window.addEventListener("storage", onStorage);
 
     var onKeyDown = function (ev) {
-        if (ev && ev.altKey && ev.shiftKey && !ev.ctrlKey && !ev.metaKey &&
+        if (!ev) return;
+        if (ev.altKey && ev.shiftKey && !ev.ctrlKey && !ev.metaKey &&
             (ev.key === "L" || ev.key === "l" || ev.code === "KeyL")) {
             ev.preventDefault();
             window.__antigravity_toggleLang();
+            return;
+        }
+        if (ev.altKey && !ev.ctrlKey && !ev.shiftKey && !ev.metaKey &&
+            (ev.key === "ArrowUp" || ev.key === "ArrowDown")) {
+            var active = document.activeElement;
+            if (active && (
+                active.tagName === "INPUT" ||
+                active.tagName === "TEXTAREA" ||
+                active.tagName === "SELECT" ||
+                active.isContentEditable ||
+                isInsideExcluded(active)
+            )) {
+                return;
+            }
+            if (jumpConversationTurn(ev.key === "ArrowUp" ? -1 : 1)) {
+                ev.preventDefault();
+            }
         }
     };
     window.addEventListener("keydown", onKeyDown, true);
 
     window.__antigravity_ensureAppearancePanel = ensureAppearancePanel;
+    initThoughtConfigFromBridge();
 
     if (currentLang !== "en") {
         translateWholePage();
     }
     ensureAppearancePanel();
+    enhanceCodeBlocks();
+    scanThoughtBlocks();
 
     var onDomReady = function () {
+        initThoughtConfigFromBridge();
         translateWholePage();
         ensureAppearancePanel();
+        enhanceCodeBlocks();
+        scanThoughtBlocks();
     };
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", onDomReady);
@@ -737,6 +1516,7 @@
         }
         var oldPanel = document.getElementById(PANEL_ID);
         if (oldPanel && oldPanel.parentNode) oldPanel.parentNode.removeChild(oldPanel);
+        clearAllThoughtBoxes();
     };
 
     console.log("[Antigravity i18n] Localization runner v" + RUNNER_VERSION + " initialized (lang=" + currentLang + ").");

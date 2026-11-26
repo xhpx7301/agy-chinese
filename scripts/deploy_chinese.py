@@ -85,7 +85,11 @@ def is_asar_localized(target_asar):
     try:
         with open(target_asar, "rb") as f:
             raw = f.read()
-        return b"injectAntigravityI18n" in raw and b"syncI18nFromGithub" in raw
+        return (
+            b"injectAntigravityI18n" in raw
+            and b"syncI18nFromGithub" in raw
+            and b"agyChineseBridge" in raw
+        )
     except Exception:
         return False
 
@@ -408,6 +412,7 @@ def run_repo_check():
 
     js_targets = [
         os.path.join(script_dir, "i18n_runner.js"),
+        os.path.join(script_dir, "thought_ipc.js"),
         os.path.join(script_dir, "cdp_inject.mjs"),
     ]
     for jsp in js_targets:
@@ -507,19 +512,21 @@ def main():
     repo_root = os.path.dirname(script_dir)
     i18n_runner_src = os.path.join(script_dir, "i18n_runner.js")
     i18n_data_src = os.path.join(script_dir, "i18n_data.json")
+    thought_ipc_src = os.path.join(script_dir, "thought_ipc.js")
     manifest_src = os.path.join(repo_root, "manifest.json")
 
-    for req_file in (i18n_runner_src, i18n_data_src):
+    for req_file in (i18n_runner_src, i18n_data_src, thought_ipc_src):
         if not os.path.exists(req_file):
             print(f"[错误] 缺少必需文件: {req_file}")
             sys.exit(1)
 
     with open(i18n_data_src, "r", encoding="utf-8") as f:
         json.load(f)
-    chk_runner = subprocess.run(["node", "--check", i18n_runner_src], capture_output=True, text=True)
-    if chk_runner.returncode != 0:
-        print(f"[错误] i18n_runner.js 语法校验失败:\n{chk_runner.stderr}")
-        sys.exit(1)
+    for chk_target in (i18n_runner_src, thought_ipc_src):
+        chk_runner = subprocess.run(["node", "--check", chk_target], capture_output=True, text=True)
+        if chk_runner.returncode != 0:
+            print(f"[错误] {os.path.basename(chk_target)} 语法校验失败:\n{chk_runner.stderr}")
+            sys.exit(1)
 
     work_dir = tempfile.mkdtemp(prefix="agy_chinese_work_")
     bak_dir = tempfile.mkdtemp(prefix="agy_chinese_bak_")
@@ -555,6 +562,7 @@ def main():
         os.makedirs(dist_dir, exist_ok=True)
         shutil.copy2(i18n_runner_src, os.path.join(dist_dir, "i18n_runner.js"))
         shutil.copy2(i18n_data_src, os.path.join(dist_dir, "i18n_data.json"))
+        shutil.copy2(thought_ipc_src, os.path.join(dist_dir, "thought_ipc.js"))
         if os.path.exists(manifest_src):
             shutil.copy2(manifest_src, os.path.join(dist_dir, "i18n_manifest.json"))
 
@@ -759,11 +767,12 @@ def main():
             f.write(upd_content)
         print("[✓] 已修补 updater.js（检查更新菜单与弹窗）")
 
-        # F. Patch ipcHandlers.js (native context menus with hot-cache support)
+        # F. Patch ipcHandlers.js (native context menus with hot-cache support + thought translator IPC)
         ipc_js = os.path.join(dist_dir, "ipcHandlers.js")
         if os.path.exists(ipc_js):
             with open(ipc_js, "r", encoding="utf-8") as f:
                 ipc_content = f.read()
+            ipc_changed = False
             if "translateContextMenuLabel" not in ipc_content:
                 ipc_helper = (
                     "let __agI18nCache = null;\n"
@@ -802,9 +811,42 @@ def main():
                 if ipc_needle in ipc_content:
                     ipc_content = ipc_content.replace(ipc_needle, ipc_helper, 1)
                     ipc_content = ipc_content.replace("label: item.label ?? '',", "label: translateContextMenuLabel(item.label ?? ''),")
-                    with open(ipc_js, "w", encoding="utf-8") as f:
-                        f.write(ipc_content)
-                    print("[✓] 已修补 ipcHandlers.js（原生右键菜单汉化）")
+                    ipc_changed = True
+            if "registerThoughtIpc" not in ipc_content:
+                reg_needle = "function registerIpcHandlers(storageManager, deps = {}) {"
+                if reg_needle in ipc_content:
+                    ipc_content = ipc_content.replace(
+                        reg_needle,
+                        reg_needle + "\n    try { require('./thought_ipc.js').registerThoughtIpc(electron_1); } catch (_e) {}",
+                        1,
+                    )
+                    ipc_changed = True
+            if ipc_changed:
+                with open(ipc_js, "w", encoding="utf-8") as f:
+                    f.write(ipc_content)
+                print("[✓] 已修补 ipcHandlers.js（原生右键菜单汉化 + 思考翻译 IPC）")
+
+        # G. Patch preload.js (expose agyChineseBridge for thought translator)
+        preload_js = os.path.join(dist_dir, "preload.js")
+        if os.path.exists(preload_js):
+            with open(preload_js, "r", encoding="utf-8") as f:
+                p_content = f.read()
+            if "agyChineseBridge" not in p_content:
+                p_needle = "electron_1.contextBridge.exposeInMainWorld('extensions', extensionsAPI);"
+                if p_needle in p_content:
+                    bridge_code = (
+                        p_needle + "\n"
+                        "electron_1.contextBridge.exposeInMainWorld('agyChineseBridge', {\n"
+                        "    getThoughtConfig: () => electron_1.ipcRenderer.invoke('agy-chinese:get-thought-config'),\n"
+                        "    saveThoughtConfig: (cfg) => electron_1.ipcRenderer.invoke('agy-chinese:save-thought-config', cfg),\n"
+                        "    testThoughtConfig: (cfg) => electron_1.ipcRenderer.invoke('agy-chinese:test-thought-config', cfg),\n"
+                        "    translateThought: (payload) => electron_1.ipcRenderer.invoke('agy-chinese:translate-thought', payload),\n"
+                        "});"
+                    )
+                    p_content = p_content.replace(p_needle, bridge_code, 1)
+                    with open(preload_js, "w", encoding="utf-8") as f:
+                        f.write(p_content)
+                    print("[✓] 已修补 preload.js（挂载 agyChineseBridge）")
 
         # 5. Pre-pack syntax gatekeeper
         check_targets = [
@@ -814,6 +856,8 @@ def main():
             os.path.join(dist_dir, "menu.js"),
             os.path.join(dist_dir, "updater.js"),
             os.path.join(dist_dir, "ipcHandlers.js"),
+            os.path.join(dist_dir, "preload.js"),
+            os.path.join(dist_dir, "thought_ipc.js"),
             os.path.join(dist_dir, "i18n_runner.js"),
         ]
         for fpath in check_targets:
@@ -842,7 +886,7 @@ def main():
         # 7. Post-pack sandbox verification
         print("[*] 正在沙箱中解包验证打包产物...")
         subprocess.run(f'npx --yes @electron/asar extract "{temp_pack}" "{verify_dir}"', shell=True, check=True)
-        for rel in ["utils.js", "main.js", "tray.js", "menu.js", "updater.js", "ipcHandlers.js", "i18n_runner.js"]:
+        for rel in ["utils.js", "main.js", "tray.js", "menu.js", "updater.js", "ipcHandlers.js", "preload.js", "thought_ipc.js", "i18n_runner.js"]:
             vpath = os.path.join(verify_dir, "dist", rel)
             if os.path.exists(vpath):
                 chk = subprocess.run(["node", "--check", vpath], capture_output=True, text=True)

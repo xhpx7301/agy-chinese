@@ -56,5 +56,8 @@ python scripts/install_obsidian_prism.py --uninstall
 python scripts/deploy_chinese.py --restore
 ```
 
-## 3. 客户端内可视化与快捷键切换
-汉化激活后，可在 **设置 → 外观（Settings → Appearance）** 页面底部直接点击 **界面语言（简体中文 | English）** 开关，或在任意窗口按下 **`Alt + Shift + L`** 实时切换 **简体中文 ↔ English (原版)**，无需重启或还原 `app.asar`。
+## 3. 客户端内可视化、思考翻译与快捷键
+汉化激活后，可在 **设置 → 外观（Settings → Appearance）** 页面底部直接：
+- 点击 **界面语言（简体中文 | English）** 开关，或按下 **`Alt + Shift + L`** 实时切换中/英文（无需重启）；
+- 按需开启 **思考过程双模翻译**（支持免配置机翻与本地 Ollama / OpenAI 兼容模型润色，默认关闭且支持仅展开时翻译）；
+- 启用 **长代码块手动折叠（≥48 行）** 与 **`Alt + ↑ / ↓` 对话轮次快速跳转**。
